@@ -1,4 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
+var connectionString = builder.Configuration.GetConnectionString("AuthServiceAPIContext") ?? throw new InvalidOperationException("Connection string 'AuthServiceAPIContext' not found.");
+
+builder.Services.AddDbContext<AuthServiceAPIContext>(options => options.UseSqlServer(connectionString));
 
 // Add services to the container.
 
