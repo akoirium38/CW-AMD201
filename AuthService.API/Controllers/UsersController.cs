@@ -4,10 +4,10 @@ using AuthService.API.Models;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UserController : ControllerBase
+public class UsersController : ControllerBase
 {
     private readonly AuthServiceAPIContext _context;
-    public UserController(AuthServiceAPIContext context)
+    public UsersController(AuthServiceAPIContext context)
     {
         _context = context;
     }
