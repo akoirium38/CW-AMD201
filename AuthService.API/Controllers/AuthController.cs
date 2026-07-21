@@ -26,7 +26,7 @@ namespace AuthService.API.Controllers
             return Ok(new
             {
                 success = true,
-                message = "OTP has been sent to your email."
+                message = "OTP has been sentl."
             });
         }
     }
