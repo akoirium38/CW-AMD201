@@ -12,6 +12,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//Email Service (MailSender)
+builder.Services.AddScoped<GmailService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -20,9 +23,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-//Email Service
-builder.Services.AddScoped<GmailService>();
 
 app.UseHttpsRedirection();
 

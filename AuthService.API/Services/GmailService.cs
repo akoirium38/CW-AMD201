@@ -19,7 +19,7 @@ namespace AuthService.API.Services
 
             email.From.Add(
                 new MailboxAddress(
-                    "My App", _configuration["Gmail:Username"])
+                    "MailSender CW-AMD201", _configuration["Gmail:Username"])
             );
 
             email.To.Add(
@@ -35,7 +35,7 @@ namespace AuthService.API.Services
             using var smtp = new SmtpClient();
 
             await smtp.ConnectAsync(
-                "stmp.gmail.com",
+                "smtp.gmail.com",
                 587,
                 SecureSocketOptions.StartTls
             );
