@@ -2,7 +2,7 @@
 {
     public class OtpCode
     {
-        public string Id { get; set; }
+        public int Id { get; set; }
         public string Email { get; set; }
         public string Code { get; set; }
         public DateTime ExpiresAt { get; set; }

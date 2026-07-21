@@ -23,5 +23,15 @@ namespace AuthService.API.Controllers
 
             return Ok(new { otp = otp });
         }
+
+        [HttpPost("OtpCode")]
+        public async Task<IActionResult> OtpCode(string email)
+        {
+            string OtpCode = _otpService.CreateOtpCode();
+
+            await _otpService.SaveOtpCode(OtpCode, email);
+
+            return Ok("created successfully");
+        }
     }
 }

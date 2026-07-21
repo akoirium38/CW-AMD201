@@ -21,7 +21,7 @@ public class OtpCodesController : ControllerBase
 
     // GET: api/OtpCode/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<OtpCode>> GetOtpCode(string id)
+    public async Task<ActionResult<OtpCode>> GetOtpCode(int id)
     {
         var otpcode = await _context.OtpCodes.FindAsync(id);
 
@@ -36,7 +36,7 @@ public class OtpCodesController : ControllerBase
     // PUT: api/OtpCode/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutOtpCode(string? id, OtpCode otpcode)
+    public async Task<IActionResult> PutOtpCode(int? id, OtpCode otpcode)
     {
         if (id != otpcode.Id)
         {
@@ -77,7 +77,7 @@ public class OtpCodesController : ControllerBase
 
     // DELETE: api/OtpCode/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteOtpCode(string? id)
+    public async Task<IActionResult> DeleteOtpCode(int? id)
     {
         var otpcode = await _context.OtpCodes.FindAsync(id);
         if (otpcode == null)
@@ -91,7 +91,7 @@ public class OtpCodesController : ControllerBase
         return NoContent();
     }
 
-    private bool OtpCodeExists(string? id)
+    private bool OtpCodeExists(int? id)
     {
         return _context.OtpCodes.Any(e => e.Id == id);
     }

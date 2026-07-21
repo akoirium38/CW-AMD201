@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AuthService.API.Migrations
 {
     [DbContext(typeof(AuthServiceAPIContext))]
-    [Migration("20260721014410_addOtpCodeDatabase")]
-    partial class addOtpCodeDatabase
+    [Migration("20260721065642_otpcode-database")]
+    partial class otpcodedatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,8 +26,11 @@ namespace AuthService.API.Migrations
 
             modelBuilder.Entity("AuthService.API.Models.OtpCode", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
