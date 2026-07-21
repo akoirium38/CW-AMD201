@@ -15,6 +15,9 @@ builder.Services.AddSwaggerGen();
 //Email Service (MailSender)
 builder.Services.AddScoped<GmailService>();
 
+//OTP Service
+builder.Services.AddScoped<OtpService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
