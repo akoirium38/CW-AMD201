@@ -18,6 +18,9 @@ builder.Services.AddScoped<GmailService>();
 //OTP Service
 builder.Services.AddScoped<OtpService>();
 
+//AuthService
+builder.Services.AddScoped<Auth>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
