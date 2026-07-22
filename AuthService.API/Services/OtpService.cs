@@ -1,4 +1,5 @@
 ﻿using AuthService.API.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 
 namespace AuthService.API.Services
@@ -41,30 +42,37 @@ namespace AuthService.API.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> CheckOtpCheck(string code, string email)
+        public async Task<bool> CheckOtpCode(string code, string email)
         {
             var otpCode = _context.OtpCodes.FirstOrDefault(o => o.Code == code);
 
-            if(otpCode.Email != email)
+            if(otpCode == null  ||otpCode.Email != email)
             {
                 return false;
             }
 
-            if(otpCode.ExpiresAt > DateTime.UtcNow)
+            if(otpCode.ExpiresAt < DateTime.UtcNow || otpCode.IsUsed == true)
             {
+                _context.OtpCodes.Remove(otpCode);
+                await _context.SaveChangesAsync();
                 return false;
             }
-
-            if(otpCode.IsUsed == true)
-            {
-                return false;
-            }
-
-            otpCode.IsUsed = true;
+            _context.OtpCodes.Remove(otpCode);
 
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task ClearOtpCodes() // to remove all code that used or expired
+        {
+            var invalidOtps = await _context.OtpCodes
+                                .Where(x => x.IsUsed || DateTime.UtcNow > x.ExpiresAt)
+                                .ToListAsync();
+
+            _context.OtpCodes.RemoveRange(invalidOtps);
+
+            await _context.SaveChangesAsync();
         }
     }
 }

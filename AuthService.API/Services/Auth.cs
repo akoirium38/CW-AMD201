@@ -48,5 +48,14 @@ namespace AuthService.API.Services
             //send mail
             await _gmailService.SendEmailAsync(gmail,subject,body);
         }
+
+        public async Task<bool> VerifyOtp(string OtpCode, string gmail)
+        {
+            bool IsVerified = await _otpService.CheckOtpCode(OtpCode, gmail);
+
+            return IsVerified;
+        }
+
+
     }
 }

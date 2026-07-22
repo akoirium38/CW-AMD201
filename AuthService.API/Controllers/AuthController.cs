@@ -3,6 +3,7 @@ using AuthService.API.DTOs;
 using AuthService.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Org.BouncyCastle.Crypto;
 
 namespace AuthService.API.Controllers
 {
@@ -27,6 +28,27 @@ namespace AuthService.API.Controllers
             {
                 success = true,
                 message = "OTP has been sent."
+            });
+        }
+
+        [HttpPost("Check_Otp")]
+        public async Task<IActionResult> CheckOtp(string OtpCode, string gmail)
+        {
+            bool IsVerified = await _authService.VerifyOtp(OtpCode, gmail);
+
+            if (!IsVerified)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Invalid or expired OTP."
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Verified OTP"
             });
         }
     }

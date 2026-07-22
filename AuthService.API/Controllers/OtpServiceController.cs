@@ -16,15 +16,7 @@ namespace AuthService.API.Controllers
             _otpService = otpService;
         }
 
-        [HttpPost("create_otp")]
-        public IActionResult CreateOtpCode()
-        {
-            string otp = _otpService.CreateOtpCode();
-
-            return Ok(new { otp = otp });
-        }
-
-        [HttpPost("OtpCode")]
+        [HttpPost("AddOtpCode")]
         public async Task<IActionResult> OtpCode(string email)
         {
             string OtpCode = _otpService.CreateOtpCode();
@@ -32,6 +24,14 @@ namespace AuthService.API.Controllers
             await _otpService.SaveOtpCode(OtpCode, email);
 
             return Ok("created successfully");
+        }
+
+        [HttpPost("ClearOtpCode")]
+        public async Task<IActionResult> ClearOtpCodes()
+        {
+            await _otpService.ClearOtpCodes();
+
+            return Ok("Cleared all used and expired codes");
         }
     }
 }
