@@ -19,7 +19,7 @@ namespace AuthService.API.Services
 
             email.From.Add(
                 new MailboxAddress(
-                    "MailSender CW-AMD201", _configuration["Gmail:Username"])
+                    "FileHub:AMD201", _configuration["Gmail:Username"])
             );
 
             email.To.Add(
