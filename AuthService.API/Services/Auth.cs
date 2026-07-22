@@ -43,7 +43,7 @@ namespace AuthService.API.Services
 
             string subject = "OTP code";
 
-            string body = "this is your OTP code: " + OtpCode;
+            string body = "this is your OTP code: " + OtpCode + "\nthis code will be expire after 5 mins";
 
             //send mail
             await _gmailService.SendEmailAsync(gmail,subject,body);

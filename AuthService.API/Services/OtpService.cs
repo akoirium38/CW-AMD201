@@ -40,5 +40,31 @@ namespace AuthService.API.Services
             _context.OtpCodes.Add(otpcode);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> CheckOtpCheck(string code, string email)
+        {
+            var otpCode = _context.OtpCodes.FirstOrDefault(o => o.Code == code);
+
+            if(otpCode.Email != email)
+            {
+                return false;
+            }
+
+            if(otpCode.ExpiresAt > DateTime.UtcNow)
+            {
+                return false;
+            }
+
+            if(otpCode.IsUsed == true)
+            {
+                return false;
+            }
+
+            otpCode.IsUsed = true;
+
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
     }
 }
