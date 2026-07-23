@@ -19,7 +19,7 @@ namespace AuthService.API.Services
 
             email.From.Add(
                 new MailboxAddress(
-                    "FileHub:AMD201", _configuration["Gmail:Username"])
+                    "FileHub:AMD201", _configuration["Gmail:Username"]!)
             );
 
             email.To.Add(
@@ -41,8 +41,8 @@ namespace AuthService.API.Services
             );
 
             await smtp.AuthenticateAsync(
-                _configuration["Gmail:UserName"],
-                _configuration["Gmail:AppPassword"]
+                _configuration["Gmail:UserName"]!,
+                _configuration["Gmail:AppPassword"]!
             );
 
             await smtp.SendAsync(email);

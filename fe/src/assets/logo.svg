@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 512 512"
+     fill="none">
+
+  <defs>
+
+    <filter id="cloud-shadow"
+            x="-30%"
+            y="-30%"
+            width="180%"
+            height="180%">
+      <feDropShadow
+          dx="0"
+          dy="10"
+          stdDeviation="18"
+          flood-color="#000000"
+          flood-opacity=".16"/>
+    </filter>
+
+  </defs>
+
+  <!-- Folder -->
+
+  <path
+      fill="#111111"
+      d="
+      M76 118
+      C76 94 94 76 118 76
+
+      H205
+
+      L236 108
+
+      H394
+
+      C418 108 436 126 436 150
+
+      V340
+
+      C436 364 418 382 394 382
+
+      H118
+
+      C94 382 76 364 76 340
+
+      Z"/>
+
+  <!-- Folder panel -->
+
+  <rect
+      x="96"
+      y="128"
+      width="320"
+      height="232"
+      rx="26"
+      fill="#1B1B1B"/>
+
+  <!-- Cloud -->
+
+  <g filter="url(#cloud-shadow)">
+
+    <path
+      fill="white"
+      d="
+
+      M202 356
+
+      C174 356 154 336 154 310
+
+      C154 286 170 268 194 262
+
+      C202 218 238 188 282 188
+
+      C330 188 366 220 374 264
+
+      C406 266 432 292 432 326
+
+      C432 362 404 388 368 388
+
+      H202
+
+      Z"/>
+
+  </g>
+
+  <!-- Share -->
+
+  <g
+      stroke="#111111"
+      stroke-width="11"
+      stroke-linecap="round"
+      stroke-linejoin="round">
+
+      <circle
+          cx="230"
+          cy="310"
+          r="10"
+          fill="#111111"/>
+
+      <circle
+          cx="296"
+          cy="270"
+          r="10"
+          fill="#111111"/>
+
+      <circle
+          cx="322"
+          cy="332"
+          r="10"
+          fill="#111111"/>
+
+      <path d="M239 304 L287 276"/>
+
+      <path d="M239 316 L312 327"/>
+
+  </g>
+
+</svg>
