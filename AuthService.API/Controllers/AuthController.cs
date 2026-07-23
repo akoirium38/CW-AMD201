@@ -1,6 +1,7 @@
 ﻿using AuthService.API.Controllers;
 using AuthService.API.DTOs;
 using AuthService.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Org.BouncyCastle.Crypto;
@@ -52,5 +53,13 @@ namespace AuthService.API.Controllers
                 token = token
             });
         }
+
+        [Authorize]
+        [HttpPost("Check_Authorize")]
+        public async Task<IActionResult> CheckAuthorize()
+        {
+            return Ok("Authorized");
+        }
+
     }
 }
