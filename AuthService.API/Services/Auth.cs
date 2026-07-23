@@ -8,14 +8,18 @@ namespace AuthService.API.Services
         private readonly AuthServiceAPIContext _context;
         private readonly OtpService _otpService;
         private readonly GmailService _gmailService;
+        private readonly JwtService _jwtService;
 
         public Auth(
             AuthServiceAPIContext context,
-            OtpService otpService, GmailService gmailService)
+            OtpService otpService,
+            GmailService gmailService,
+            JwtService jwtService)
         {
             _context = context;
             _otpService = otpService;
             _gmailService = gmailService;
+            _jwtService = jwtService;
         }
 
         public async Task RequestOtpAsync(string gmail)
@@ -49,11 +53,25 @@ namespace AuthService.API.Services
             await _gmailService.SendEmailAsync(gmail,subject,body);
         }
 
-        public async Task<bool> VerifyOtp(string OtpCode, string gmail)
+        public async Task<string?> VerifyOtp(string OtpCode, string gmail)
         {
             bool IsVerified = await _otpService.CheckOtpCode(OtpCode, gmail);
 
-            return IsVerified;
+            if (!IsVerified)
+            {
+                return null;
+            }
+
+            var user = await _context.User.FirstOrDefaultAsync(u => u.Gmail == gmail);
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            var token = _jwtService.GenerateToken(user.Id, user.Gmail);
+
+            return token;
         }
 
 

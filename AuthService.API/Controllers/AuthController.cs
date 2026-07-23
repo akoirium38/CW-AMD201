@@ -34,9 +34,9 @@ namespace AuthService.API.Controllers
         [HttpPost("Check_Otp")]
         public async Task<IActionResult> CheckOtp(string OtpCode, string gmail)
         {
-            bool IsVerified = await _authService.VerifyOtp(OtpCode, gmail);
+            var token = await _authService.VerifyOtp(OtpCode, gmail);
 
-            if (!IsVerified)
+            if (token == null)
             {
                 return BadRequest(new
                 {
@@ -48,7 +48,8 @@ namespace AuthService.API.Controllers
             return Ok(new
             {
                 success = true,
-                message = "Verified OTP"
+                message = "Login successful",
+                token = token
             });
         }
     }
