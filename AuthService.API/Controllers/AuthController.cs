@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Org.BouncyCastle.Crypto;
+using System.Security.Claims;
 
 namespace AuthService.API.Controllers
 {
@@ -59,6 +60,19 @@ namespace AuthService.API.Controllers
         public async Task<IActionResult> CheckAuthorize()
         {
             return Ok("Authorized");
+        }
+
+        [Authorize]
+        [HttpGet("my-id")]
+        public IActionResult GetMyId()
+        {
+            var userId = User.FindFirst(
+                ClaimTypes.NameIdentifier)?.Value;
+
+            return Ok(new
+            {
+                UserId = userId
+            });
         }
 
     }
