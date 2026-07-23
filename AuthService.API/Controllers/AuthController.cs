@@ -4,7 +4,6 @@ using AuthService.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Org.BouncyCastle.Crypto;
 using System.Security.Claims;
 
 namespace AuthService.API.Controllers
