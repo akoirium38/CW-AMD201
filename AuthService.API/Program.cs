@@ -1,5 +1,12 @@
 using AuthService.API.Services;
 using Microsoft.EntityFrameworkCore;
+
+//for Jwt
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.Data.SqlClient;
+
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("AuthServiceAPIContext") ?? throw new InvalidOperationException("Connection string 'AuthServiceAPIContext' not found.");
 
@@ -21,6 +28,17 @@ builder.Services.AddScoped<OtpService>();
 //AuthService
 builder.Services.AddScoped<Auth>();
 
+//JwtService
+builder.Services.AddScoped<JwtService>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+
+    };
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -31,6 +49,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
