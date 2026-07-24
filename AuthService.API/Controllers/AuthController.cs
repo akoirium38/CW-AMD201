@@ -32,24 +32,18 @@ namespace AuthService.API.Controllers
             });
         }
 
-        [HttpPost("Check_Otp")]
-        public async Task<IActionResult> CheckOtp(string OtpCode, string gmail)
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> CheckOtp(string code, string email)
         {
-            var token = await _authService.VerifyOtp(OtpCode, gmail);
+            var token = await _authService.VerifyOtp(code, email);
 
             if (token == null)
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = "Invalid or expired OTP."
-                });
+                return BadRequest();
             }
 
             return Ok(new
             {
-                success = true,
-                message = "Login successful",
                 token = token
             });
         }
