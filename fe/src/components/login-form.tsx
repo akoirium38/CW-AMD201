@@ -51,11 +51,14 @@ export function LoginForm({
 
   const onEmailSubmit = async (data: EmailFormValues) => {
     const { email } = data;
-    await authEmail(email);
-    setStep("otp");
-    setSubmittedEmail(email);
-    console.log("Email submitted:", email);
-
+    const success = await authEmail(email);
+    if (success) {
+      setStep("otp");
+      setSubmittedEmail(email);
+      console.log("Email submitted:", email);
+    } else {
+      emailForm.setError("email", { type: "manual", message: "Failed to send OTP. Please check your email and try again." });
+    }
   }
 
   const onOtpSubmit = async (data: OtpFormValues) => {

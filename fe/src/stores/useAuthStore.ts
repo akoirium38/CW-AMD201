@@ -14,11 +14,13 @@ export const useAuthStore = create<AuthState>((set,get)=>({
             
             await authService.authEmail(email);
 
-            toast.success("Authentication successful!")
+            toast.success("OTP sent to your email!")
+            return true;
 
         } catch (error){
             console.error(error);
-            toast.error("Failed to authenticate. Please try again.")
+            toast.error("Failed to send OTP. Please check your email and try again.")
+            return false;
         } finally {
             set({loading:false})
         }
