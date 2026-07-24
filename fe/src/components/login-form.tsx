@@ -1,21 +1,24 @@
 "use client"
 
-import { useState } from "react"
-import { cn } from "@/lib/utils"
-import { Label } from "./ui/label"
-import { Input } from "./ui/input"
-import { Button } from "./ui/button"
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useNavigate } from "react-router";
+
 
 const emailSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
 })
 
 const otpSchema = z.object({
-  otp: z.string().min(6, { message: "Please enter the 6-digit code" }),
+  otp: z.string().length(6, { message: "OTP must be 6 digits" }),
 })
 
 type EmailFormValues = z.infer<typeof emailSchema>
@@ -25,25 +28,40 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const authEmail = useAuthStore((state) => state.authEmail)
+  const authOtp = useAuthStore((state) => state.authOtp)
   const [step, setStep] = useState<"email" | "otp">("email")
   const [submittedEmail, setSubmittedEmail] = useState("")
 
+  const navigate = useNavigate();
+
   const emailForm = useForm<EmailFormValues>({
     resolver: zodResolver(emailSchema),
+    defaultValues: {
+      email: "",
+    },
   })
 
   const otpForm = useForm<OtpFormValues>({
     resolver: zodResolver(otpSchema),
+    defaultValues: {
+      otp: "",
+    },
   })
 
   const onEmailSubmit = async (data: EmailFormValues) => {
-    setSubmittedEmail(data.email)
-    setStep("otp")
-    console.log("Send code to", data.email)
+    const { email } = data;
+    await authEmail(email);
+    setStep("otp");
+    setSubmittedEmail(email);
+    console.log("Email submitted:", email);
+
   }
 
   const onOtpSubmit = async (data: OtpFormValues) => {
+    await authOtp(submittedEmail, data.otp);
     console.log("Verify code", data.otp, "for", submittedEmail)
+    navigate("/");
   }
 
   return (
