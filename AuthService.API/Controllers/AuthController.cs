@@ -21,9 +21,9 @@ namespace AuthService.API.Controllers
         }
 
         [HttpPost("request-otp")]
-        public async Task<IActionResult> RequestOtp(string email)
+        public async Task<IActionResult> RequestOtp([FromBody] RequestOtpDto request)
         {
-            await _authService.RequestOtpAsync(email);
+            await _authService.RequestOtpAsync(request.Email);
 
             return Ok(new
             {
@@ -33,9 +33,9 @@ namespace AuthService.API.Controllers
         }
 
         [HttpPost("verify-otp")]
-        public async Task<IActionResult> CheckOtp(string code, string email)
+        public async Task<IActionResult> CheckOtp([FromBody] RequestVerifyOtpDto request)
         {
-            var token = await _authService.VerifyOtp(code, email);
+            var token = await _authService.VerifyOtp(request.Code, request.Email);
 
             if (token == null)
             {
