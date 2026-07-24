@@ -62,9 +62,13 @@ export function LoginForm({
   }
 
   const onOtpSubmit = async (data: OtpFormValues) => {
-    await authOtp(submittedEmail, data.otp);
-    console.log("Verify code", data.otp, "for", submittedEmail)
-    navigate("/");
+    const success = await authOtp(submittedEmail, data.otp);
+    if (success) {
+      console.log("Verify code", data.otp, "for", submittedEmail)
+      navigate("/");
+    } else {
+      otpForm.setError("otp", { type: "manual", message: "Invalid OTP. Please try again." });
+    }
   }
 
   return (

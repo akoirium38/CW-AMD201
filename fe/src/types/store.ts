@@ -7,5 +7,5 @@ export interface AuthState {
 
     authEmail:(email:string) => Promise<boolean> 
 
-    authOtp:(email:string, code:string) => Promise<void>
+    authOtp:(email:string, code:string) => Promise<boolean>
 }

@@ -33,13 +33,14 @@ export const useAuthStore = create<AuthState>((set,get)=>({
             set({token});
 
             toast.success("Welcome to FileHub🎉")
-
-            await authService.authOtp(email,code);
+            return true;
         } catch(error){
-            set({loading:false})
             console.error(error);
     
             toast.error("Failed to verify OTP. Please try again.")
+            return false;
+        } finally {
+            set({loading:false})
         }
     }
 }))
