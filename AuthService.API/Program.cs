@@ -15,9 +15,21 @@ builder.Services.AddDbContext<AuthServiceAPIContext>(options => options.UseSqlSe
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReact", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") //fe
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 // add Swagger's auth button
 builder.Services.AddSwaggerGen(options =>
@@ -94,6 +106,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowReact");
 
 app.UseAuthentication();
 
