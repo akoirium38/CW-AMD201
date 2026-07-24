@@ -15,6 +15,7 @@ export const useAuthStore = create<AuthState>((set,get)=>({
             await authService.authEmail(email);
 
             toast.success("Authentication successful!")
+
         } catch (error){
             console.error(error);
             toast.error("Failed to authenticate. Please try again.")
@@ -33,7 +34,9 @@ export const useAuthStore = create<AuthState>((set,get)=>({
 
             await authService.authOtp(email,code);
         } catch(error){
+            set({loading:false})
             console.error(error);
+    
             toast.error("Failed to verify OTP. Please try again.")
         }
     }
