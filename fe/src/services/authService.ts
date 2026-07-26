@@ -12,5 +12,10 @@ export const authService = {
     authOtp: async (email:string,code:string) =>{
         const res = await api.post("/auth/verify-otp", {email,code}, {withCredentials:true});
         return res.data;
+    },
+
+    fetchMe: async () => {
+        const res = await api.get("/auth/me", {withCredentials:true});
+        return res.data.email;
     }
 };

@@ -5,7 +5,7 @@ import type { AuthState } from "@/types/store"
 
 export const useAuthStore = create<AuthState>((set,get)=>({
     token:null,
-    user:null,
+    email:null,
     loading:false,
 
     authEmail:async (email:string)=>{
@@ -32,6 +32,8 @@ export const useAuthStore = create<AuthState>((set,get)=>({
             const {token} = await authService.authOtp(email,code);
             set({token});
 
+            await get().fetchMe();
+
             toast.success("Welcome to FileHub🎉")
             return true;
         } catch(error){
@@ -39,6 +41,21 @@ export const useAuthStore = create<AuthState>((set,get)=>({
     
             toast.error("Failed to verify OTP. Please try again.")
             return false;
+        } finally {
+            set({loading:false})
+        }
+    },
+
+    fetchMe: async ()=>{
+        try{
+            
+            const email = await authService.fetchMe();
+            set({loading:true})
+        } catch (error) {
+            console.error("Failed to fetch user data. Please try again.", error);
+            set({email:null,token:null})
+            toast.error("Failed to fetch user data. Please try again.")
+
         } finally {
             set({loading:false})
         }
