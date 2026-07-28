@@ -4,6 +4,7 @@ using AuthService.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Org.BouncyCastle.Bcpg.OpenPgp;
 using System.Security.Claims;
 
 namespace AuthService.API.Controllers
@@ -45,6 +46,17 @@ namespace AuthService.API.Controllers
             return Ok(new
             {
                 token = token
+            });
+        }
+
+        
+        [HttpGet("me")]
+        public async Task<IActionResult> Athume()
+        {
+
+            return Ok(new
+            {
+                email = ClaimTypes.Email
             });
         }
 
