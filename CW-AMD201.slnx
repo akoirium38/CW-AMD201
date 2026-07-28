@@ -7,4 +7,5 @@
     <Project Path="AuthService.Tests/AuthService.Tests.csproj" />
     <Project Path="FileService.Tests/FileService.Tests.csproj" />
   </Folder>
+  <Project Path="Gateway/APIGateway.csproj" Id="917c1a5d-7158-4e34-ab6a-8ab3058cfe4b" />
 </Solution>

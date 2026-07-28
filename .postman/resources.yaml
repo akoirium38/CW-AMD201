@@ -1,0 +1,8 @@
+# Use this workspace to collaborate
+workspace:
+  id: 67e64fa6-ae33-44ee-8bf4-034b9d9eb303
+
+localResources:
+  specs:
+    - ../AuthService.API/obj/Debug/net8.0/EndpointInfo/AuthService.API.json
+    - ../FileService.API/obj/Debug/net8.0/EndpointInfo/FileService.API.json
