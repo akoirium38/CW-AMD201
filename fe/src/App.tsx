@@ -1,5 +1,5 @@
-import {BrowserRouter, Route, Routes} from "react-router";
-import {Toaster} from "sonner";
+import { BrowserRouter, Route, Routes } from "react-router";
+import { Toaster } from "sonner";
 import AuthPage from "./pages/AuthPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Home from "./pages/Home";
@@ -8,6 +8,7 @@ function App() {
 
   return (
     <>
+      <Toaster position="top-right" richColors closeButton />
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
