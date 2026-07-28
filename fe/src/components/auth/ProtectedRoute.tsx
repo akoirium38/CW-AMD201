@@ -1,19 +1,16 @@
-import React from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Navigate, Outlet } from "react-router";
+import { toast } from "sonner";
 
 const ProtectedRoute = () => {
-    const {token, email, loading} = useAuthStore();
+    const { token } = useAuthStore();
 
     if (!token) {
-        return (
-            <Navigate to="/auth" replace/>
-        )
+        toast.warning("Please log in first before continuing.");
+        return <Navigate to="/auth" replace />;
     }
 
-    return (
-        <Outlet></Outlet>
-    )
-}
+    return <Outlet />;
+};
 
 export default ProtectedRoute;
