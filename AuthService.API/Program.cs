@@ -1,3 +1,4 @@
+using AuthService.API;
 using AuthService.API.Services;
 //for Jwt
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -5,30 +6,26 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MongoDB.Driver;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-var connectionString = builder.Configuration.GetConnectionString("AuthServiceAPIContext") ?? throw new InvalidOperationException("Connection string 'AuthServiceAPIContext' not found.");
+var mongoConnectionString = builder.Configuration["MongoDB:ConnectionString"];
 
-builder.Services.AddDbContext<AuthServiceAPIContext>(options => options.UseSqlServer(connectionString));
+if (string.IsNullOrEmpty(mongoConnectionString))
+{
+    throw new InvalidOperationException(
+        "MongoDB connection string is not configured.");
+}
+
+builder.Services.AddSingleton<IMongoClient>(
+    new MongoClient(mongoConnectionString));
+
+builder.Services.AddSingleton<AuthDbContext>();
 
 // Add services to the container.
 
 builder.Services.AddControllers();
-
-// Add CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowReact", policy =>
-    {
-        policy.WithOrigins("https://localhost:7000")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-                
-    });
-});
-
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

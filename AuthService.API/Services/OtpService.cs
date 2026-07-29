@@ -1,78 +1,107 @@
 ﻿using AuthService.API.Models;
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using System.Security.Cryptography;
 
 namespace AuthService.API.Services
 {
     public class OtpService
     {
-        private readonly AuthServiceAPIContext _context;
-
-        public OtpService(AuthServiceAPIContext context)
+        private readonly AuthDbContext _context;
+        public OtpService(AuthDbContext context)
         {
             _context = context;
         }
+        // Generate a random OTP code
         public string CreateOtpCode(int length = 6)
         {
-            const string chars = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890";
-
-            var Code = new char[length];
-
+            const string chars =
+                "qwertyuiopasdfghjklzxcvbnm" +
+                "QWERTYUIOPASDFGHJKLZXCVBNM" +
+                "1234567890";
+            var code = new char[length];
             for (int i = 0; i < length; i++)
             {
-                Code[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
+                code[i] = chars[
+                    RandomNumberGenerator.GetInt32(chars.Length)
+                ];
             }
 
-            string OtpCode = new string(Code);
-
-            return OtpCode;
+            return new string(code);
         }
 
+
+        // Save OTP to MongoDB
         public async Task SaveOtpCode(string code, string email)
         {
-            OtpCode otpcode = new OtpCode()
+            var otpCode = new OtpCode
             {
                 Email = email,
                 Code = code,
-                ExpiresAt = DateTime.Now.AddMinutes(5),
-                IsUsed = false,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                IsUsed = false
             };
 
-            _context.OtpCodes.Add(otpcode);
-            await _context.SaveChangesAsync();
+            await _context.OtpCodes.InsertOneAsync(otpCode);
         }
 
-        public async Task<bool> CheckOtpCode(string code, string email)
+
+        // Check OTP
+        public async Task<bool> CheckOtpCode(
+            string code,
+            string email)
         {
-            var otpCode = _context.OtpCodes.FirstOrDefault(o => o.Code == code);
+            // Find the OTP that matches both
+            // the code AND the email
+            var otpCode = await _context.OtpCodes
+                .Find(x =>
+                    x.Code == code &&
+                    x.Email == email)
+                .FirstOrDefaultAsync();
 
-            if(otpCode == null  ||otpCode.Email != email)
+            // OTP doesn't exist
+            if (otpCode == null)
             {
                 return false;
             }
 
-            if(otpCode.ExpiresAt < DateTime.UtcNow || otpCode.IsUsed == true)
+            // OTP has expired
+            if (otpCode.ExpiresAt < DateTime.UtcNow)
             {
-                _context.OtpCodes.Remove(otpCode);
-                await _context.SaveChangesAsync();
+                await _context.OtpCodes.DeleteOneAsync(
+                    x => x.Id == otpCode.Id
+                );
+
                 return false;
             }
-            _context.OtpCodes.Remove(otpCode);
 
-            await _context.SaveChangesAsync();
+            // OTP has already been used
+            if (otpCode.IsUsed)
+            {
+                await _context.OtpCodes.DeleteOneAsync(
+                    x => x.Id == otpCode.Id
+                );
+
+                return false;
+            }
+
+            // OTP is valid.
+            // Delete it so it cannot be reused.
+            await _context.OtpCodes.DeleteOneAsync(
+                x => x.Id == otpCode.Id
+            );
 
             return true;
         }
 
-        public async Task ClearOtpCodes() // to remove all code that used or expired
+
+        // Remove all used or expired OTP codes
+        public async Task ClearOtpCodes()
         {
-            var invalidOtps = await _context.OtpCodes
-                                .Where(x => x.IsUsed || DateTime.UtcNow > x.ExpiresAt)
-                                .ToListAsync();
-
-            _context.OtpCodes.RemoveRange(invalidOtps);
-
-            await _context.SaveChangesAsync();
+            var result = await _context.OtpCodes.DeleteManyAsync(
+                x =>
+                    x.IsUsed ||
+                    x.ExpiresAt < DateTime.UtcNow
+            );
         }
     }
 }

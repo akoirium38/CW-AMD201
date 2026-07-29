@@ -36,7 +36,7 @@ public class OtpCodesController : ControllerBase
     // PUT: api/OtpCode/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutOtpCode(int? id, OtpCode otpcode)
+    public async Task<IActionResult> PutOtpCode(string id, OtpCode otpcode)
     {
         if (id != otpcode.Id)
         {
@@ -91,7 +91,7 @@ public class OtpCodesController : ControllerBase
         return NoContent();
     }
 
-    private bool OtpCodeExists(int? id)
+    private bool OtpCodeExists(string id)
     {
         return _context.OtpCodes.Any(e => e.Id == id);
     }

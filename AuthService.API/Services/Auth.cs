@@ -1,17 +1,17 @@
 ﻿using AuthService.API.Models;
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 
 namespace AuthService.API.Services
 {
     public class Auth
     {
-        private readonly AuthServiceAPIContext _context;
+        private readonly AuthDbContext _context;
         private readonly OtpService _otpService;
         private readonly GmailService _gmailService;
         private readonly JwtService _jwtService;
 
         public Auth(
-            AuthServiceAPIContext context,
+            AuthDbContext context,
             OtpService otpService,
             GmailService gmailService,
             JwtService jwtService)
@@ -24,56 +24,80 @@ namespace AuthService.API.Services
 
         public async Task RequestOtpAsync(string gmail)
         {
-            //find user
-            var user = await _context.User.FirstOrDefaultAsync(u => u.Gmail == gmail);
+            // Find user in MongoDB
+            var user = await _context.Users
+                .Find(u => u.Gmail == gmail)
+                .FirstOrDefaultAsync();
 
-            //if not create user
+            // If user doesn't exist, create a new user
             if (user == null)
             {
-                user = new User()
+                user = new User
                 {
-                    Gmail = gmail,
+                    Gmail = gmail
                 };
 
-                _context.User.Add(user);
-
-                await _context.SaveChangesAsync();
+                // Insert user into MongoDB
+                await _context.Users.InsertOneAsync(user);
             }
 
-            //otp
-            string OtpCode = _otpService.CreateOtpCode();
+            // Generate OTP
+            string otpCode = _otpService.CreateOtpCode();
 
-            await _otpService.SaveOtpCode(OtpCode, gmail);
+            // Save OTP to MongoDB
+            await _otpService.SaveOtpCode(otpCode, gmail);
 
-            string subject = "OTP code";
+            // Email information
+            string subject = "OTP Code";
 
-            string body = "this is your OTP code: " + OtpCode + "\nthis code will be expire after 5 mins";
+            string body =
+                "This is your OTP code: " + otpCode +
+                "\nThis code will expire after 5 minutes.";
 
-            //send mail
-            await _gmailService.SendEmailAsync(gmail,subject,body);
+            // Send OTP email
+            await _gmailService.SendEmailAsync(
+                gmail,
+                subject,
+                body
+            );
         }
 
-        public async Task<string?> VerifyOtp(string OtpCode, string gmail)
-        {
-            bool IsVerified = await _otpService.CheckOtpCode(OtpCode, gmail);
 
-            if (!IsVerified)
+        public async Task<string?> VerifyOtp(
+            string otpCode,
+            string gmail)
+        {
+            // Check OTP
+            bool isVerified =
+                await _otpService.CheckOtpCode(
+                    otpCode,
+                    gmail
+                );
+
+            // OTP is invalid
+            if (!isVerified)
             {
                 return null;
             }
 
-            var user = await _context.User.FirstOrDefaultAsync(u => u.Gmail == gmail);
+            // Find user in MongoDB
+            var user = await _context.Users
+                .Find(u => u.Gmail == gmail)
+                .FirstOrDefaultAsync();
 
+            // User doesn't exist
             if (user == null)
             {
                 return null;
             }
 
-            var token = _jwtService.GenerateToken(user.Id, user.Gmail);
+            // Generate JWT
+            var token = _jwtService.GenerateToken(
+                user.Id,
+                user.Gmail
+            );
 
             return token;
         }
-
-
     }
 }

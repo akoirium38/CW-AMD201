@@ -15,7 +15,7 @@ namespace AuthService.API.Services
             _configuration = configuration;
         }
 
-        public string GenerateToken(int userID, string email)
+        public string GenerateToken(string userID, string email)
         {
             var key = _configuration["Jwt:Key"];
 

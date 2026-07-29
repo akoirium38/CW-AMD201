@@ -23,7 +23,7 @@ namespace AuthService.Tests
                 }
             };
 
-            var result = controller.Me();
+
 
             var okResult = Assert.IsType<OkObjectResult>(result);
             var payload = Assert.IsType<Dictionary<string, string>>(okResult.Value);
