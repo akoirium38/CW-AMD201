@@ -40,20 +40,21 @@ namespace FileService.API.Services
         }
 
         // Converts a FileRecord database entity to a FileRecordResponseDto for frontend
+        // Field names match the TypeScript FileRecord interface in fe/src/types/file.ts
         public static FileRecordResponseDto MapToDto(FileRecord record)
         {
             return new FileRecordResponseDto
             {
-                Id = record.Id,
+                FileId = record.Id.ToString(),          // string "fileId" as expected by frontend
                 FileName = record.FileName,
                 ContentType = record.ContentType,
-                FileSizeBytes = record.FileSizeBytes,
+                Size = record.FileSizeBytes,             // renamed to "size" as expected by frontend
                 UploadDate = record.UploadDate,
                 HasPassword = !string.IsNullOrEmpty(record.PasswordHash),
                 ExpiryDate = record.ExpiryDate,
                 DownloadLimit = record.DownloadLimit,
                 DownloadCount = record.DownloadCount,
-                DownloadUrl = $"/api/files/{record.Id}/download",
+                DownloadUrl = $"/api/files/download/{record.Id}",  // path matches frontend: /files/download/{id}
                 ThumbnailUrl = !string.IsNullOrEmpty(record.ThumbnailPath) ? $"/api/files/{record.Id}/thumbnail" : null
             };
         }
@@ -83,10 +84,14 @@ namespace FileService.API.Services
             // 4. Generate thumbnail if image file
             string? thumbFileName = await _thumbnailService.GenerateThumbnailAsync(file, storedFileName);
 
-            // 5. Calculate optional expiry date
-            DateTime? expiryDate = dto.ExpiryDays.HasValue && dto.ExpiryDays.Value > 0
-                ? DateTime.UtcNow.AddDays(dto.ExpiryDays.Value)
-                : null;
+            // 5. Parse optional expiry date string from frontend (e.g. "2026-08-15")
+            // Frontend now sends a full date string instead of a number of days
+            DateTime? expiryDate = null;
+            if (!string.IsNullOrWhiteSpace(dto.ExpiryDate) &&
+                DateTime.TryParse(dto.ExpiryDate, out DateTime parsedDate))
+            {
+                expiryDate = parsedDate.ToUniversalTime();
+            }
 
             // 6. Optional password hashing
             string? passwordHash = !string.IsNullOrWhiteSpace(dto.Password)

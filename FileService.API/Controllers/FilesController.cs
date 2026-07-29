@@ -79,6 +79,24 @@ namespace FileService.API.Controllers
             }
         }
 
+        // GET: /api/files/my-files
+        // Alias route matching the frontend fileService.fetchMyFiles() call
+        [HttpGet("my-files")]
+        [Authorize]
+        public async Task<IActionResult> GetMyFiles()
+        {
+            try
+            {
+                int userId = GetCurrentUserId();
+                var files = await _fileService.GetUserFilesAsync(userId);
+                return Ok(files);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
         // GET: /api/files/storage-quota
         // Retrieves storage quota usage for authenticated user
         [HttpGet("storage-quota")]
@@ -128,10 +146,30 @@ namespace FileService.API.Controllers
         }
 
         // GET: /api/files/{id}/download
-        // Downloads physical file content (optional password query parameter)
+        // Original download route (kept for backward compatibility)
         [HttpGet("{id:int}/download")]
         [AllowAnonymous]
         public async Task<IActionResult> DownloadFile(int id, [FromQuery] string? password)
+        {
+            var (stream, contentType, fileName, errorMessage) = await _fileService.PrepareDownloadAsync(id, password);
+            if (errorMessage != null)
+            {
+                return BadRequest(new { message = errorMessage });
+            }
+
+            if (stream == null)
+            {
+                return NotFound(new { message = "File binary content missing." });
+            }
+
+            return File(stream, contentType, fileName);
+        }
+
+        // GET: /api/files/download/{id}
+        // Frontend-compatible download route matching fileService.downloadFile(fileId)
+        [HttpGet("download/{id:int}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> DownloadFileAlt(int id, [FromQuery] string? password)
         {
             var (stream, contentType, fileName, errorMessage) = await _fileService.PrepareDownloadAsync(id, password);
             if (errorMessage != null)

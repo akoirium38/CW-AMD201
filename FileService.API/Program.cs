@@ -18,12 +18,18 @@ builder.Services.AddDbContext<FileDbContext>(options =>
 // 2. Add Controllers
 builder.Services.AddControllers();
 
-// 3. Configure CORS to explicitly allow React frontend (http://localhost:5173)
+// 3. Configure CORS to allow requests from:
+//    - React Frontend (http://localhost:5173 original, http://localhost:7070 new port)
+//    - API Gateway (https://localhost:7000) which proxies all frontend requests
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(
+                "http://localhost:5173",   // Original direct frontend port
+                "http://localhost:7070",   // New Vite frontend port
+                "https://localhost:7000"   // Ocelot API Gateway
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
