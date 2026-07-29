@@ -1,4 +1,4 @@
-import type { FileRecord } from "./file";
+import type { FileRecord, UpdateFilePayload } from "./file";
 
 export interface AuthState {
     token: string | null;
@@ -8,7 +8,7 @@ export interface AuthState {
     
     setAuth: (token: string, user:any) => Promise<void>
 
-    logout: () => Promise<void>
+    logOut: () => Promise<void>
 
     authEmail:(email:string) => Promise<boolean> 
 
@@ -18,7 +18,7 @@ export interface AuthState {
 }
 
 export interface FileState {
-    files: FileRecord[];
+    files: FileRecord[] | null;
     loading: boolean;
     uploading: boolean;
     uploadProgress: number;
@@ -27,4 +27,7 @@ export interface FileState {
     uploadFile: (file: File, options?: { expiryDate?:string; downloadLimit?: number; password?: string}) => Promise<boolean>
     downloadFile: (fileId:string, filename: string) => Promise<boolean>
     deleteFile: (fileId: string) => Promise<boolean>
+    updateFile: (fileId: string, payload: UpdateFilePayload) => Promise<boolean>
+
+    copyShareLink: (fileId: string) => void
 }
