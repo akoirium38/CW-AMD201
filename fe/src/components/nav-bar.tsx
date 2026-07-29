@@ -11,7 +11,7 @@ import {
 
     export function Navbar() {
     const location = useLocation();
-    const navigate = useNavigate(); // 2. Khởi tạo hook navigate
+    const navigate = useNavigate(); 
     const { token } = useAuthStore();
 
     return (
@@ -24,7 +24,7 @@ import {
             className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
             >
             <a href="/" className="flex items-center gap-2 !no-underline !border-none !shadow-none !outline-none hover:!no-underline">
-                <img src="src/assets/logo.svg" alt="Logo" className="w-10 h-10" />
+                <img src="/src/assets/logo.svg" alt="Logo" className="w-10 h-10" />
                 <span className="text-xl font-semibold !no-underline">
                 FileHub
                 </span>
@@ -62,14 +62,24 @@ import {
                         </NavigationMenuLink>
                     </NavigationMenuItem>
 
+                    <NavigationMenuItem>
+                        <NavigationMenuLink
+                        onClick={async () => {
+                            await useAuthStore.getState().logOut();
+                        }}
+                        className={`${navigationMenuTriggerStyle()} bg-transparent rounded-2xl cursor-pointer data-[active]:bg-slate-100`}
+                        >
+                        Đăng xuất
+                        </NavigationMenuLink>
+                    </NavigationMenuItem>
+
                     </NavigationMenuList>
                 </NavigationMenu>
 
 
-                <div className="w-px h-6 bg-slate-200"></div>
 
 
-                <div className="text-sm font-medium text-slate-600">Đã đăng nhập</div>
+
                 </>
             ) : (
 

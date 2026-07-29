@@ -18,8 +18,21 @@ export const useAuthStore = create<AuthState>()(
             },
 
 
-            logout: async () => {
-                set({ token: null, email: null, user: null });
+            logOut: async () => {
+                try {
+                    set({ loading: true });
+                    set({ token: null, email: null, user: null });
+
+                    await authService.logOut();
+                    toast.success("Logged out successfully!");
+                } catch (error) {
+                    console.error("Logout failed:", error);
+                    toast.error("Logout failed. Please try again.");
+                } finally {
+                    set({ loading: false });
+                    
+                }
+                
             },
 
             authEmail: async (email: string) => {
