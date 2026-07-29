@@ -10,8 +10,11 @@ namespace FileService.API.Services
     // Service responsible for generating and serving file thumbnails
     public class ThumbnailService
     {
-        private readonly string _thumbnailFolder;
+        private readonly string _thumbnailFolder = string.Empty;
         private static readonly string[] ImageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp" };
+
+        // Parameterless constructor for Moq unit testing
+        public ThumbnailService() { }
 
         public ThumbnailService(IWebHostEnvironment environment)
         {
@@ -25,14 +28,14 @@ namespace FileService.API.Services
         }
 
         // Checks if the file extension represents an image
-        public bool IsImageFile(string fileName)
+        public virtual bool IsImageFile(string fileName)
         {
             string ext = Path.GetExtension(fileName).ToLowerInvariant();
             return ImageExtensions.Contains(ext);
         }
 
         // Generates or stores a thumbnail image for uploaded image files
-        public async Task<string?> GenerateThumbnailAsync(IFormFile file, string storedFileName)
+        public virtual async Task<string?> GenerateThumbnailAsync(IFormFile file, string storedFileName)
         {
             if (!IsImageFile(file.FileName))
             {
@@ -53,7 +56,7 @@ namespace FileService.API.Services
         }
 
         // Retrieves stream for thumbnail download
-        public FileStream? GetThumbnailStream(string thumbFileName)
+        public virtual FileStream? GetThumbnailStream(string thumbFileName)
         {
             string fullPath = Path.Combine(_thumbnailFolder, thumbFileName);
             if (!File.Exists(fullPath))
@@ -65,7 +68,7 @@ namespace FileService.API.Services
         }
 
         // Deletes thumbnail image file
-        public void DeleteThumbnail(string? thumbFileName)
+        public virtual void DeleteThumbnail(string? thumbFileName)
         {
             if (string.IsNullOrEmpty(thumbFileName)) return;
 

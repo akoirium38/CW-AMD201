@@ -9,7 +9,10 @@ namespace FileService.API.Services
     // Simple service to handle physical disk file upload, retrieval, and deletion
     public class StorageService
     {
-        private readonly string _uploadFolder;
+        private readonly string _uploadFolder = string.Empty;
+
+        // Parameterless constructor for Moq unit testing
+        public StorageService() { }
 
         public StorageService(IWebHostEnvironment environment)
         {
@@ -24,7 +27,7 @@ namespace FileService.API.Services
         }
 
         // Saves an incoming file to disk with a unique GUID prefix
-        public async Task<(string StoredFileName, string FullPath)> SaveFileAsync(IFormFile file)
+        public virtual async Task<(string StoredFileName, string FullPath)> SaveFileAsync(IFormFile file)
         {
             // Generate unique stored file name to avoid collisions (e.g. "a1b2c3d4_myDocument.pdf")
             string uniquePrefix = Guid.NewGuid().ToString("N");
@@ -42,7 +45,7 @@ namespace FileService.API.Services
         }
 
         // Retrieves a file stream for downloading
-        public FileStream? GetFileStream(string storedFileName)
+        public virtual FileStream? GetFileStream(string storedFileName)
         {
             string fullPath = Path.Combine(_uploadFolder, storedFileName);
             if (!File.Exists(fullPath))
@@ -54,7 +57,7 @@ namespace FileService.API.Services
         }
 
         // Deletes a file from physical disk storage
-        public bool DeleteFile(string storedFileName)
+        public virtual bool DeleteFile(string storedFileName)
         {
             string fullPath = Path.Combine(_uploadFolder, storedFileName);
             if (File.Exists(fullPath))
@@ -66,6 +69,6 @@ namespace FileService.API.Services
         }
 
         // Returns physical folder path
-        public string GetUploadFolder() => _uploadFolder;
+        public virtual string GetUploadFolder() => _uploadFolder;
     }
 }
