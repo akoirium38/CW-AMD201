@@ -1,7 +1,7 @@
 using FileService.API.Data;
 using FileService.API.DTOs;
 using FileService.API.Models;
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 namespace FileService.API.Services
 {
     // Main Service containing core CRUD logic, password verification, expiration, and download tracking
+    // Now uses MongoDB Atlas instead of SQL Server
     public class FileService
     {
         private readonly FileDbContext _dbContext;
@@ -39,27 +40,27 @@ namespace FileService.API.Services
             return Convert.ToHexString(bytes);
         }
 
-        // Converts a FileRecord database entity to a FileRecordResponseDto for frontend
+        // Converts a FileRecord MongoDB document to a FileRecordResponseDto for the frontend
         // Field names match the TypeScript FileRecord interface in fe/src/types/file.ts
         public static FileRecordResponseDto MapToDto(FileRecord record)
         {
             return new FileRecordResponseDto
             {
-                FileId = record.Id.ToString(),          // string "fileId" as expected by frontend
+                FileId = record.Id,                          // MongoDB ObjectId string
                 FileName = record.FileName,
                 ContentType = record.ContentType,
-                Size = record.FileSizeBytes,             // renamed to "size" as expected by frontend
+                Size = record.FileSizeBytes,                 // "size" as expected by frontend
                 UploadDate = record.UploadDate,
                 HasPassword = !string.IsNullOrEmpty(record.PasswordHash),
                 ExpiryDate = record.ExpiryDate,
                 DownloadLimit = record.DownloadLimit,
                 DownloadCount = record.DownloadCount,
-                DownloadUrl = $"/api/files/download/{record.Id}",  // path matches frontend: /files/download/{id}
+                DownloadUrl = $"/api/files/download/{record.Id}",
                 ThumbnailUrl = !string.IsNullOrEmpty(record.ThumbnailPath) ? $"/api/files/{record.Id}/thumbnail" : null
             };
         }
 
-        // Uploads a file, saves disk content, thumbnail, and stores database metadata record
+        // Uploads a file, saves disk content, thumbnail, and stores database metadata in MongoDB
         public async Task<FileRecordResponseDto> UploadFileAsync(int userId, UploadFileRequestDto dto)
         {
             var file = dto.File;
@@ -71,7 +72,7 @@ namespace FileService.API.Services
                 throw new InvalidOperationException(singleMsg);
             }
 
-            // 2. Check user storage quota
+            // 2. Check user storage quota from MongoDB
             var (canUpload, quotaMsg) = await _uploadLimitService.CheckUserQuotaAsync(userId, file.Length);
             if (!canUpload)
             {
@@ -85,7 +86,6 @@ namespace FileService.API.Services
             string? thumbFileName = await _thumbnailService.GenerateThumbnailAsync(file, storedFileName);
 
             // 5. Parse optional expiry date string from frontend (e.g. "2026-08-15")
-            // Frontend now sends a full date string instead of a number of days
             DateTime? expiryDate = null;
             if (!string.IsNullOrWhiteSpace(dto.ExpiryDate) &&
                 DateTime.TryParse(dto.ExpiryDate, out DateTime parsedDate))
@@ -98,7 +98,7 @@ namespace FileService.API.Services
                 ? HashPassword(dto.Password)
                 : null;
 
-            // 7. Create entity record
+            // 7. Create the MongoDB document
             var fileRecord = new FileRecord
             {
                 UserId = userId,
@@ -114,37 +114,42 @@ namespace FileService.API.Services
                 ThumbnailPath = thumbFileName
             };
 
-            // Save to database
-            _dbContext.Files.Add(fileRecord);
-            await _dbContext.SaveChangesAsync();
+            // Insert document into MongoDB "files" collection
+            await _dbContext.Files.InsertOneAsync(fileRecord);
 
             return MapToDto(fileRecord);
         }
 
-        // Returns all files owned by the specified user
+        // Returns all files owned by the specified user, newest first
         public async Task<IEnumerable<FileRecordResponseDto>> GetUserFilesAsync(int userId)
         {
-            var files = await _dbContext.Files
-                .Where(f => f.UserId == userId)
-                .OrderByDescending(f => f.UploadDate)
-                .ToListAsync();
+            // MongoDB filter: find all documents where userId matches
+            var filter = Builders<FileRecord>.Filter.Eq(f => f.UserId, userId);
+
+            // Sort by upload date descending (newest first)
+            var sort = Builders<FileRecord>.Sort.Descending(f => f.UploadDate);
+
+            var files = await _dbContext.Files.Find(filter).Sort(sort).ToListAsync();
 
             return files.Select(MapToDto);
         }
 
-        // Gets file details by file ID
-        public async Task<FileRecordResponseDto?> GetFileByIdAsync(int fileId)
+        // Gets file details by MongoDB ObjectId string
+        public async Task<FileRecordResponseDto?> GetFileByIdAsync(string fileId)
         {
-            var fileRecord = await _dbContext.Files.FindAsync(fileId);
+            var filter = Builders<FileRecord>.Filter.Eq(f => f.Id, fileId);
+            var fileRecord = await _dbContext.Files.Find(filter).FirstOrDefaultAsync();
             if (fileRecord == null) return null;
 
             return MapToDto(fileRecord);
         }
 
         // Verifies password for protected file access
-        public async Task<bool> VerifyPasswordAsync(int fileId, string rawPassword)
+        public async Task<bool> VerifyPasswordAsync(string fileId, string rawPassword)
         {
-            var fileRecord = await _dbContext.Files.FindAsync(fileId);
+            var filter = Builders<FileRecord>.Filter.Eq(f => f.Id, fileId);
+            var fileRecord = await _dbContext.Files.Find(filter).FirstOrDefaultAsync();
+
             if (fileRecord == null || string.IsNullOrEmpty(fileRecord.PasswordHash))
             {
                 return true; // No password protection set
@@ -155,9 +160,11 @@ namespace FileService.API.Services
         }
 
         // Validates constraints and retrieves physical file stream for download
-        public async Task<(FileStream? Stream, string ContentType, string FileName, string? ErrorMessage)> PrepareDownloadAsync(int fileId, string? password)
+        public async Task<(FileStream? Stream, string ContentType, string FileName, string? ErrorMessage)> PrepareDownloadAsync(string fileId, string? password)
         {
-            var fileRecord = await _dbContext.Files.FindAsync(fileId);
+            var filter = Builders<FileRecord>.Filter.Eq(f => f.Id, fileId);
+            var fileRecord = await _dbContext.Files.Find(filter).FirstOrDefaultAsync();
+
             if (fileRecord == null)
             {
                 return (null, string.Empty, string.Empty, "File not found.");
@@ -191,39 +198,46 @@ namespace FileService.API.Services
                 return (null, string.Empty, string.Empty, "File binary content not found on server disk.");
             }
 
-            // Increment download count
-            fileRecord.DownloadCount++;
-            await _dbContext.SaveChangesAsync();
+            // Increment download count in MongoDB using an atomic update
+            var update = Builders<FileRecord>.Update.Inc(f => f.DownloadCount, 1);
+            await _dbContext.Files.UpdateOneAsync(filter, update);
 
             return (stream, fileRecord.ContentType, fileRecord.FileName, null);
         }
 
-        // Deletes a file record from DB and cleans up disk files
-        public async Task<bool> DeleteFileAsync(int fileId, int userId)
+        // Deletes a file record from MongoDB and cleans up disk files
+        public async Task<bool> DeleteFileAsync(string fileId, int userId)
         {
-            var fileRecord = await _dbContext.Files.FirstOrDefaultAsync(f => f.Id == fileId && f.UserId == userId);
+            // Only delete if the file belongs to this user (security check)
+            var filter = Builders<FileRecord>.Filter.And(
+                Builders<FileRecord>.Filter.Eq(f => f.Id, fileId),
+                Builders<FileRecord>.Filter.Eq(f => f.UserId, userId)
+            );
+
+            var fileRecord = await _dbContext.Files.Find(filter).FirstOrDefaultAsync();
             if (fileRecord == null)
             {
                 return false;
             }
 
-            // Delete physical stored file
+            // Delete physical stored file from disk
             _storageService.DeleteFile(fileRecord.StoredFileName);
 
             // Delete thumbnail if present
             _thumbnailService.DeleteThumbnail(fileRecord.ThumbnailPath);
 
-            // Remove database record
-            _dbContext.Files.Remove(fileRecord);
-            await _dbContext.SaveChangesAsync();
+            // Remove the document from MongoDB
+            await _dbContext.Files.DeleteOneAsync(filter);
 
             return true;
         }
 
         // Gets stream for thumbnail display
-        public async Task<FileStream?> GetThumbnailStreamAsync(int fileId)
+        public async Task<FileStream?> GetThumbnailStreamAsync(string fileId)
         {
-            var fileRecord = await _dbContext.Files.FindAsync(fileId);
+            var filter = Builders<FileRecord>.Filter.Eq(f => f.Id, fileId);
+            var fileRecord = await _dbContext.Files.Find(filter).FirstOrDefaultAsync();
+
             if (fileRecord == null || string.IsNullOrEmpty(fileRecord.ThumbnailPath))
             {
                 return null;

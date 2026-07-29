@@ -1,16 +1,24 @@
 using FileService.API.Models;
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 
 namespace FileService.API.Data
 {
-    // Database context for managing FileRecord entities in SQL Server
-    public class FileDbContext : DbContext
+    // MongoDB context — replaces the old EF Core FileDbContext
+    // This class provides access to the "files" collection in MongoDB Atlas
+    public class FileDbContext
     {
-        public FileDbContext(DbContextOptions<FileDbContext> options) : base(options)
+        private readonly IMongoDatabase _database;
+
+        public FileDbContext(IMongoClient mongoClient, IConfiguration configuration)
         {
+            // Connect to the specific database named in appsettings.json (e.g. "FileServiceDB")
+            string dbName = configuration["MongoDB:DatabaseName"] ?? "FileServiceDB";
+            _database = mongoClient.GetDatabase(dbName);
         }
 
-        // Table for storing file metadata
-        public DbSet<FileRecord> Files { get; set; } = null!;
+        // Provides access to the "files" collection in MongoDB
+        // This is equivalent to the old DbSet<FileRecord> Files property
+        public IMongoCollection<FileRecord> Files =>
+            _database.GetCollection<FileRecord>("files");
     }
 }

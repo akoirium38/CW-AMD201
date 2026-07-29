@@ -1,7 +1,6 @@
 using FileService.API.Data;
 using FileService.API.DTOs;
-using Microsoft.EntityFrameworkCore;
-using System.Linq;
+using MongoDB.Driver;
 using System.Threading.Tasks;
 
 namespace FileService.API.Services
@@ -41,10 +40,12 @@ namespace FileService.API.Services
         // Checks if uploading a new file will exceed the user's total storage quota
         public async Task<(bool CanUpload, string Message)> CheckUserQuotaAsync(int userId, long newFileSizeBytes)
         {
-            // Calculate total bytes used by user in database
-            long usedBytes = await _dbContext.Files
-                .Where(f => f.UserId == userId)
-                .SumAsync(f => f.FileSizeBytes);
+            // Query MongoDB for all files belonging to this user
+            var filter = Builders<Models.FileRecord>.Filter.Eq(f => f.UserId, userId);
+            var userFiles = await _dbContext.Files.Find(filter).ToListAsync();
+
+            // Sum up total storage used
+            long usedBytes = userFiles.Sum(f => f.FileSizeBytes);
 
             if (usedBytes + newFileSizeBytes > MaxStoragePerUserBytes)
             {
@@ -58,9 +59,9 @@ namespace FileService.API.Services
         // Gets detailed storage quota report for user
         public async Task<StorageQuotaDto> GetUserStorageQuotaAsync(int userId)
         {
-            var userFiles = await _dbContext.Files
-                .Where(f => f.UserId == userId)
-                .ToListAsync();
+            // Query MongoDB for all files owned by this user
+            var filter = Builders<Models.FileRecord>.Filter.Eq(f => f.UserId, userId);
+            var userFiles = await _dbContext.Files.Find(filter).ToListAsync();
 
             long usedBytes = userFiles.Sum(f => f.FileSizeBytes);
             int count = userFiles.Count;

@@ -1,19 +1,23 @@
 using FileService.API.Data;
 using FileService.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MongoDB.Driver;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Database Connection Configuration (EF Core SQL Server)
-var connectionString = builder.Configuration.GetConnectionString("FileDbContext")
-    ?? "Server=(localdb)\\mssqllocaldb;Database=FileServiceAPIContext;Trusted_Connection=True;MultipleActiveResultSets=true";
+// 1. MongoDB Atlas Database Configuration
+// Reads the connection string from appsettings.json > MongoDB:ConnectionString
+var mongoConnectionString = builder.Configuration["MongoDB:ConnectionString"]
+    ?? throw new InvalidOperationException("MongoDB ConnectionString is not configured.");
 
-builder.Services.AddDbContext<FileDbContext>(options =>
-    options.UseSqlServer(connectionString));
+// Register MongoDB client as a singleton (one shared connection pool for the app)
+builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));
+
+// Register FileDbContext as scoped (created once per HTTP request)
+builder.Services.AddScoped<FileDbContext>();
 
 // 2. Add Controllers
 builder.Services.AddControllers();
@@ -92,12 +96,8 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Enable automatic EF Core database creation on startup
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<FileDbContext>();
-    dbContext.Database.EnsureCreated();
-}
+// NOTE: No database setup needed here.
+// MongoDB Atlas creates the "files" collection automatically on the first InsertOneAsync call.
 
 // 7. HTTP Request Pipeline Configuration
 if (app.Environment.IsDevelopment())

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace FileService.API.Controllers
 {
     // API Controller exposing endpoints for file upload, download, password validation, deletion, and quota
+    // File IDs are now MongoDB ObjectId strings (e.g. "64a1f2b3c4d5e6f7a8b9c0d1")
     [ApiController]
     [Route("api/[controller]")]
     public class FilesController : ControllerBase
@@ -116,10 +117,10 @@ namespace FileService.API.Controllers
         }
 
         // GET: /api/files/{id}
-        // Retrieves details for a specific file
-        [HttpGet("{id:int}")]
+        // Retrieves details for a specific file by MongoDB ObjectId string
+        [HttpGet("{id}")]
         [Authorize]
-        public async Task<IActionResult> GetFileById(int id)
+        public async Task<IActionResult> GetFileById(string id)
         {
             var file = await _fileService.GetFileByIdAsync(id);
             if (file == null)
@@ -132,9 +133,9 @@ namespace FileService.API.Controllers
 
         // POST: /api/files/{id}/verify-password
         // Validates password for protected file download
-        [HttpPost("{id:int}/verify-password")]
+        [HttpPost("{id}/verify-password")]
         [AllowAnonymous]
-        public async Task<IActionResult> VerifyPassword(int id, [FromBody] VerifyPasswordRequestDto dto)
+        public async Task<IActionResult> VerifyPassword(string id, [FromBody] VerifyPasswordRequestDto dto)
         {
             bool isValid = await _fileService.VerifyPasswordAsync(id, dto?.Password ?? string.Empty);
             if (!isValid)
@@ -147,9 +148,9 @@ namespace FileService.API.Controllers
 
         // GET: /api/files/{id}/download
         // Original download route (kept for backward compatibility)
-        [HttpGet("{id:int}/download")]
+        [HttpGet("{id}/download")]
         [AllowAnonymous]
-        public async Task<IActionResult> DownloadFile(int id, [FromQuery] string? password)
+        public async Task<IActionResult> DownloadFile(string id, [FromQuery] string? password)
         {
             var (stream, contentType, fileName, errorMessage) = await _fileService.PrepareDownloadAsync(id, password);
             if (errorMessage != null)
@@ -167,9 +168,9 @@ namespace FileService.API.Controllers
 
         // GET: /api/files/download/{id}
         // Frontend-compatible download route matching fileService.downloadFile(fileId)
-        [HttpGet("download/{id:int}")]
+        [HttpGet("download/{id}")]
         [AllowAnonymous]
-        public async Task<IActionResult> DownloadFileAlt(int id, [FromQuery] string? password)
+        public async Task<IActionResult> DownloadFileAlt(string id, [FromQuery] string? password)
         {
             var (stream, contentType, fileName, errorMessage) = await _fileService.PrepareDownloadAsync(id, password);
             if (errorMessage != null)
@@ -187,9 +188,9 @@ namespace FileService.API.Controllers
 
         // GET: /api/files/{id}/thumbnail
         // Streams thumbnail image for a file
-        [HttpGet("{id:int}/thumbnail")]
+        [HttpGet("{id}/thumbnail")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetThumbnail(int id)
+        public async Task<IActionResult> GetThumbnail(string id)
         {
             var stream = await _fileService.GetThumbnailStreamAsync(id);
             if (stream == null)
@@ -202,9 +203,9 @@ namespace FileService.API.Controllers
 
         // DELETE: /api/files/{id}
         // Deletes a file record and disk content owned by authenticated user
-        [HttpDelete("{id:int}")]
+        [HttpDelete("{id}")]
         [Authorize]
-        public async Task<IActionResult> DeleteFile(int id)
+        public async Task<IActionResult> DeleteFile(string id)
         {
             try
             {
