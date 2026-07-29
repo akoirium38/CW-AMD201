@@ -1,14 +1,13 @@
 import api from "@/lib/axios"
 import type { FileRecord } from "@/types/file"
 
-export const fileService ={
-
-    uploadFile: async(
+export const fileService = {
+    uploadFile: async (
         file: File,
         options?: {
-            expiryDate?: string,
-            downloadLimit?: number,
-            password?: string
+            expiryDate?: string;
+            downloadLimit?: number;
+            password?: string;
         },
         onProgress?: (progress: number) =>void
     ) => {
@@ -52,5 +51,9 @@ export const fileService ={
         const res = await api.get("/files/my-files",{withCredentials:true});
 
         return res.data as FileRecord[];
+    },
+    getFileDetails: async (fileId: string) => {
+        const res = await api.get(`/files/${fileId}`, {withCredentials:true});
+        return res.data as FileRecord;
     }
 };

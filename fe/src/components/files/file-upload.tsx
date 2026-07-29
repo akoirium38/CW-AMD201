@@ -1,7 +1,9 @@
 import { useState, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
+import { useNavigate } from "react-router";
+import { useDropzone, type FileRejection } from "react-dropzone";
 import { UploadCloud, File as FileIcon, Lock, Clock, Download } from "lucide-react";
 import { useFileStore } from "@/stores/useFileStore";
+import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +15,7 @@ import {
     SelectValue,
     } from "@/components/ui/select";
 
+    const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
     export function FileUpload() {
     // Trạng thái từ file upload cũ
     const { uploadFile, uploading, uploadProgress } = useFileStore();
@@ -31,16 +34,34 @@ import {
         }
     }, []);
 
+    const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+        const error = fileRejections[0]?.errors[0];
+
+        if (error?.code === "file-too-large") {
+        toast.error("File vượt quá 10MB");
+        } else {
+        toast.error("File không hợp lệ");
+        }
+    }, []);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
+        onDropRejected,
         maxFiles: 1,
-        maxSize: 10 * 1024 * 1024, // 10MB
+        maxSize: MAX_FILE_SIZE_BYTES,
         disabled: uploading,
     });
+
+    const navigate = useNavigate();
 
     // Hàm xử lý khi bấm nút Tải Lên
     const handleUpload = async () => {
         if (!file) return;
+
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast.error("File vượt quá 10MB");
+        return;
+        }
         
         const uploadOptions = {
         password: password || undefined,
@@ -50,7 +71,9 @@ import {
         
         const success = await uploadFile(file, uploadOptions);
         if (success) {
-        // Reset form sau khi upload thành công
+    
+        navigate("/my-files");
+  
         setFile(null);
         setPassword("");
         }

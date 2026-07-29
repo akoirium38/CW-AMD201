@@ -1,6 +1,8 @@
 using FileService.API.Data;
 using FileService.API.DTOs;
 using MongoDB.Driver;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace FileService.API.Services
@@ -8,7 +10,7 @@ namespace FileService.API.Services
     // Service to check upload quotas, user limits, and maximum file sizes
     public class UploadLimitService
     {
-        private readonly FileDbContext _dbContext;
+        private readonly FileDbContext? _dbContext;
 
         // Default quota per user: 100 MB
         public const long MaxStoragePerUserBytes = 100 * 1024 * 1024;
@@ -16,13 +18,16 @@ namespace FileService.API.Services
         // Max single file upload size: 50 MB
         public const long MaxSingleFileSizeBytes = 50 * 1024 * 1024;
 
+        // Parameterless constructor for Moq unit testing
+        public UploadLimitService() { }
+
         public UploadLimitService(FileDbContext dbContext)
         {
             _dbContext = dbContext;
         }
 
         // Validates if incoming file size exceeds single file limit
-        public (bool IsValid, string Message) ValidateSingleFileSize(long fileSizeBytes)
+        public virtual (bool IsValid, string Message) ValidateSingleFileSize(long fileSizeBytes)
         {
             if (fileSizeBytes <= 0)
             {
@@ -38,8 +43,10 @@ namespace FileService.API.Services
         }
 
         // Checks if uploading a new file will exceed the user's total storage quota
-        public async Task<(bool CanUpload, string Message)> CheckUserQuotaAsync(int userId, long newFileSizeBytes)
+        public virtual async Task<(bool CanUpload, string Message)> CheckUserQuotaAsync(int userId, long newFileSizeBytes)
         {
+            if (_dbContext == null) return (true, string.Empty);
+
             // Query MongoDB for all files belonging to this user
             var filter = Builders<Models.FileRecord>.Filter.Eq(f => f.UserId, userId);
             var userFiles = await _dbContext.Files.Find(filter).ToListAsync();
@@ -57,8 +64,13 @@ namespace FileService.API.Services
         }
 
         // Gets detailed storage quota report for user
-        public async Task<StorageQuotaDto> GetUserStorageQuotaAsync(int userId)
+        public virtual async Task<StorageQuotaDto> GetUserStorageQuotaAsync(int userId)
         {
+            if (_dbContext == null)
+            {
+                return new StorageQuotaDto { UsedBytes = 0, MaxBytes = MaxStoragePerUserBytes, FileCount = 0 };
+            }
+
             // Query MongoDB for all files owned by this user
             var filter = Builders<Models.FileRecord>.Filter.Eq(f => f.UserId, userId);
             var userFiles = await _dbContext.Files.Find(filter).ToListAsync();

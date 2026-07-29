@@ -1,4 +1,5 @@
 using FileService.API.Models;
+using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 
 namespace FileService.API.Data
@@ -7,7 +8,10 @@ namespace FileService.API.Data
     // This class provides access to the "files" collection in MongoDB Atlas
     public class FileDbContext
     {
-        private readonly IMongoDatabase _database;
+        private readonly IMongoDatabase? _database;
+
+        // Parameterless constructor for Moq unit testing
+        public FileDbContext() { }
 
         public FileDbContext(IMongoClient mongoClient, IConfiguration configuration)
         {
@@ -17,8 +21,7 @@ namespace FileService.API.Data
         }
 
         // Provides access to the "files" collection in MongoDB
-        // This is equivalent to the old DbSet<FileRecord> Files property
-        public IMongoCollection<FileRecord> Files =>
-            _database.GetCollection<FileRecord>("files");
+        public virtual IMongoCollection<FileRecord> Files =>
+            _database!.GetCollection<FileRecord>("files");
     }
 }

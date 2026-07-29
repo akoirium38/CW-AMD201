@@ -2,6 +2,7 @@ import {create } from "zustand";
 import {toast} from "sonner";
 import { fileService } from "@/services/fileService";
 import type { FileState } from "@/types/store";
+import type { FileRecord } from "@/types/file";
 
 export const useFileStore = create<FileState>((set, get) => ({
     files: [],
@@ -12,7 +13,8 @@ export const useFileStore = create<FileState>((set, get) => ({
     fetchMyFiles: async () => {
         try {
             set({ loading: true });
-            const files = await fileService.fetchMyFiles();
+            const response = await fileService.fetchMyFiles();
+            const files = Array.isArray(response) ? response : [];
             set({ files });
         } catch (error) {
             console.error("Failed to fetch files:", error);
@@ -73,9 +75,8 @@ export const useFileStore = create<FileState>((set, get) => ({
             set({ loading: true });
             await fileService.deleteFile(fileId);
             
-            // Cập nhật lại UI ngay lập tức bằng cách lọc bỏ file bị xóa
             set((state) => ({
-                files: state.files.filter((f) => f.fileId !== fileId)
+                files: Array.isArray(state.files) ? state.files.filter((f) => f.fileId !== fileId) : []
             }));
 
             toast.success("File deleted successfully!");
@@ -87,5 +88,52 @@ export const useFileStore = create<FileState>((set, get) => ({
         } finally {
             set({ loading: false });
         }
+    },
+
+    updateFile: async (fileId, payload) => {
+        try {
+            set({ loading: true });
+            await (fileService as any).updateFile(fileId, payload);
+
+            // Cập nhật ngay trong danh sách hiện có, khỏi phải gọi lại fetchMyFiles
+            set((state) => ({
+                files: Array.isArray(state.files)
+                    ? state.files.map((f): FileRecord =>
+                            f.fileId === fileId
+                                ? ({
+                                    ...f,
+                                    downloadLimit: payload.downloadLimit,
+                                    expiryDate: payload.expiryDate ?? null,
+                                    hasPassword: payload.password ? true : f.hasPassword,
+                                } as FileRecord)
+                                : f
+                        )
+                    : []
+            }));
+
+            toast.success("Cập nhật cài đặt thành công!");
+            return true;
+        } catch (error) {
+            console.error("Failed to update file:", error);
+            toast.error("Cập nhật thất bại. Vui lòng thử lại.");
+            return false;
+        } finally {
+            set({ loading: false });
+        }
+    },
+
+    copyShareLink: (fileId: string) => {
+        if (!fileId) return;
+        
+        const link = `${window.location.origin}/share/${fileId}`;
+        
+        navigator.clipboard.writeText(link)
+            .then(() => {
+                toast.success("Đã sao chép link chia sẻ! 🔗");
+            })
+            .catch((err) => {
+                console.error("Failed to copy link:", err);
+                toast.error("Không thể sao chép link, vui lòng thử lại.");
+            });
     }
 }));
