@@ -9,51 +9,84 @@ using System.Threading.Tasks;
 
 namespace FileService.API.Services
 {
-    // StorageService handles file upload, retrieval, and deletion
-    // Supports Firebase Storage cloud bucket with local disk fallback for development/testing
+    /// <summary>
+    /// StorageService handles physical file binary storage, retrieval, and deletion.
+    /// Integrated with Google Cloud Storage V1 SDK to store files in Firebase Storage cloud buckets,
+    /// with an automatic local disk fallback for offline development.
+    /// 
+    /// 🔗 Architecture Links:
+    /// - Configuration: Reads "Firebase:BucketName" and "Firebase:CredentialFilePath" from appsettings.json
+    /// - Service Consumer: Called directly by FileService.cs during file upload and deletion workflows
+    /// - External Cloud: Connects to Firebase Cloud Storage (amd201-cb545.firebasestorage.app)
+    /// </summary>
     public class StorageService
     {
+        // Google Cloud Storage SDK client for interacting with Firebase Cloud Storage
         private readonly StorageClient? _storageClient;
+        
+        // Target Firebase bucket name (e.g., "amd201-cb545.firebasestorage.app")
         private readonly string? _bucketName;
+        
+        // Path to local "Uploads" folder on server disk (used for fallback or thumbnail storage)
         private readonly string _uploadFolder = string.Empty;
+        
+        // Flag indicating whether Firebase credentials were valid and cloud connection is active
         private readonly bool _isFirebaseEnabled = false;
 
-        // Parameterless constructor for Moq unit testing
+        /// <summary>
+        /// Default parameterless constructor required by Moq for unit testing (FileServiceUnitTest.cs).
+        /// </summary>
         public StorageService() { }
 
+        /// <summary>
+        /// Dependency Injection Constructor. Initializes local storage folder and authenticates with Firebase.
+        /// </summary>
+        /// <param name="environment">Provides current content root directory path</param>
+        /// <param name="configuration">Accesses appsettings.json settings</param>
         public StorageService(IWebHostEnvironment environment, IConfiguration configuration)
         {
-            // 1. Local disk fallback directory setup
+            // 1. Setup local disk fallback folder ("{ContentRoot}/Uploads")
             _uploadFolder = Path.Combine(environment.ContentRootPath, "Uploads");
             if (!Directory.Exists(_uploadFolder))
             {
                 Directory.CreateDirectory(_uploadFolder);
             }
 
-            // 2. Firebase Storage setup
+            // 2. Read Firebase bucket name and JSON Service Account credentials key file path from appsettings.json
             _bucketName = configuration["Firebase:BucketName"];
             string credentialPath = configuration["Firebase:CredentialFilePath"] ?? "firebase-key.json";
+            
+            // Resolve relative credential file path to absolute root path
             string fullCredentialPath = Path.IsPathRooted(credentialPath)
                 ? credentialPath
                 : Path.Combine(environment.ContentRootPath, credentialPath);
 
+            // 3. If credentials file exists, authenticate using Google OAuth2 Service Account
             if (!string.IsNullOrEmpty(_bucketName) && File.Exists(fullCredentialPath))
             {
                 try
                 {
+                    // Load service account private key & credentials from JSON file
                     GoogleCredential credential = GoogleCredential.FromFile(fullCredentialPath);
+                    
+                    // Create authorized StorageClient for Google Cloud / Firebase API requests
                     _storageClient = StorageClient.Create(credential);
                     _isFirebaseEnabled = true;
                 }
-                catch
+                catch (Exception)
                 {
+                    // If credentials invalid or network fails, fallback gracefully to local disk storage
                     _isFirebaseEnabled = false;
                 }
             }
         }
 
-        // Saves an incoming file to Firebase Storage (or local disk if Firebase credentials are absent)
-        // Returns unique stored file name and full path or public cloud URL
+        /// <summary>
+        /// Saves an uploaded IFormFile to Firebase Storage bucket or local disk.
+        /// Generates a unique stored file name (UUID prefix) to prevent naming collisions.
+        /// </summary>
+        /// <param name="file">Form file submitted from frontend / Swagger</param>
+        /// <returns>Tuple containing (uniqueStoredFileName, fullPathOrCloudUrl)</returns>
         public virtual async Task<(string StoredFileName, string FullPath)> SaveFileAsync(IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -61,13 +94,15 @@ namespace FileService.API.Services
                 throw new ArgumentException("File cannot be empty.", nameof(file));
             }
 
+            // Generate a 32-character hexadecimal GUID prefix to guarantee unique stored file names
             string uniquePrefix = Guid.NewGuid().ToString("N");
             string safeFileName = Path.GetFileName(file.FileName);
             string storedFileName = $"{uniquePrefix}_{safeFileName}";
 
+            // Option A: Upload directly to Firebase Cloud Storage bucket if credentials active
             if (_isFirebaseEnabled && _storageClient != null && !string.IsNullOrEmpty(_bucketName))
             {
-                // Stream binary payload directly over network to Firebase Storage bucket
+                // Stream file payload over HTTPS directly to Firebase Storage bucket
                 using (var stream = file.OpenReadStream())
                 {
                     await _storageClient.UploadObjectAsync(
@@ -78,12 +113,12 @@ namespace FileService.API.Services
                     );
                 }
 
-                // Public Firebase media download URL
+                // Construct public Firebase Storage media download URL
                 string firebaseUrl = $"https://firebasestorage.googleapis.com/v0/b/{_bucketName}/o/{Uri.EscapeDataString(storedFileName)}?alt=media";
                 return (storedFileName, firebaseUrl);
             }
 
-            // Fallback: Save file to local disk
+            // Option B: Fallback to local server disk storage
             string fullPath = Path.Combine(_uploadFolder, storedFileName);
             using (var stream = new FileStream(fullPath, FileMode.Create))
             {
@@ -93,7 +128,11 @@ namespace FileService.API.Services
             return (storedFileName, fullPath);
         }
 
-        // Retrieves file stream for downloading (local disk stream or Firebase stream)
+        /// <summary>
+        /// Retrieves a FileStream for reading file content from local server storage.
+        /// </summary>
+        /// <param name="storedFileName">Unique file name stored on disk</param>
+        /// <returns>FileStream or null if file not found</returns>
         public virtual FileStream? GetFileStream(string storedFileName)
         {
             string fullPath = Path.Combine(_uploadFolder, storedFileName);
@@ -105,11 +144,16 @@ namespace FileService.API.Services
             return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
 
-        // Deletes a file from Firebase Storage bucket or local disk
+        /// <summary>
+        /// Deletes a file from Firebase Cloud Storage bucket or local server disk.
+        /// </summary>
+        /// <param name="storedFileName">Unique stored object name in bucket or disk</param>
+        /// <returns>True if successfully deleted</returns>
         public virtual bool DeleteFile(string storedFileName)
         {
             if (string.IsNullOrEmpty(storedFileName)) return false;
 
+            // Delete from Firebase Storage if cloud mode enabled
             if (_isFirebaseEnabled && _storageClient != null && !string.IsNullOrEmpty(_bucketName))
             {
                 try
@@ -117,13 +161,13 @@ namespace FileService.API.Services
                     _storageClient.DeleteObject(_bucketName, storedFileName);
                     return true;
                 }
-                catch
+                catch (Exception)
                 {
-                    // Ignore if object doesn't exist on Firebase
+                    // Ignore if object already missing from Firebase bucket
                 }
             }
 
-            // Local disk deletion
+            // Delete from local server disk
             string fullPath = Path.Combine(_uploadFolder, storedFileName);
             if (File.Exists(fullPath))
             {
@@ -133,10 +177,14 @@ namespace FileService.API.Services
             return false;
         }
 
-        // Returns upload folder path
+        /// <summary>
+        /// Returns local upload folder path.
+        /// </summary>
         public virtual string GetUploadFolder() => _uploadFolder;
 
-        // Returns true if Firebase Storage is active
+        /// <summary>
+        /// Checks whether Firebase Storage cloud integration is active.
+        /// </summary>
         public virtual bool IsFirebaseEnabled() => _isFirebaseEnabled;
     }
 }

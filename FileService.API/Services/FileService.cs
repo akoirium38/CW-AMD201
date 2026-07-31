@@ -12,8 +12,17 @@ using System.Threading.Tasks;
 
 namespace FileService.API.Services
 {
-    // Main Service containing core CRUD logic, password verification, expiration, and download tracking
-    // Now uses MongoDB Atlas instead of SQL Server
+    /// <summary>
+    /// FileService is the core business logic layer responsible for handling file uploads,
+    /// MongoDB document mapping, SHA256 password security, expiration checks, download counting, and deletion.
+    /// 
+    /// 🔗 Architecture Links:
+    /// - Database: Interacts with MongoDB Atlas collection ("files") via FileDbContext.cs
+    /// - Cloud Storage: Calls StorageService.cs to stream physical files to Firebase Cloud Storage
+    /// - Thumbnail Generator: Calls ThumbnailService.cs to generate image previews
+    /// - Quota Validation: Calls UploadLimitService.cs to enforce per-user storage caps
+    /// - Frontend DTO Mapping: MapToDto converts MongoDB documents into DTOs matching fe/src/types/file.ts
+    /// </summary>
     public class FileService
     {
         private readonly FileDbContext _dbContext;
@@ -21,6 +30,9 @@ namespace FileService.API.Services
         private readonly ThumbnailService _thumbnailService;
         private readonly UploadLimitService _uploadLimitService;
 
+        /// <summary>
+        /// Constructor injected by ASP.NET Core Dependency Injection system.
+        /// </summary>
         public FileService(
             FileDbContext dbContext,
             StorageService storageService,
@@ -33,15 +45,23 @@ namespace FileService.API.Services
             _uploadLimitService = uploadLimitService;
         }
 
-        // Standard SHA256 password hashing helper function
+        /// <summary>
+        /// Hashes raw plaintext passwords using SHA256 cryptographic hashing.
+        /// Converts the output byte array to a 64-character uppercase hexadecimal string.
+        /// Example: "123456" -> "8D969EEF6ECAD3C29A3A629280E686CF0C3F5D5A86AFF3CA12020C923ADC6C92"
+        /// </summary>
         private static string HashPassword(string password)
         {
             byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
             return Convert.ToHexString(bytes);
         }
 
-        // Converts a FileRecord MongoDB document to a FileRecordResponseDto for the frontend
-        // Field names match the TypeScript FileRecord interface in fe/src/types/file.ts
+        /// <summary>
+        /// Utility method mapping a MongoDB FileRecord document into a FileRecordResponseDto object
+        /// expected by the React frontend (fe/src/types/file.ts).
+        /// </summary>
+        /// <param name="record">MongoDB document</param>
+        /// <returns>Frontend-compatible response DTO</returns>
         public static FileRecordResponseDto MapToDto(FileRecord record)
         {
             return new FileRecordResponseDto
@@ -49,9 +69,9 @@ namespace FileService.API.Services
                 FileId = record.Id,                          // MongoDB ObjectId string
                 FileName = record.FileName,
                 ContentType = record.ContentType,
-                Size = record.FileSizeBytes,                 // "size" as expected by frontend
+                Size = record.FileSizeBytes,                 // File size in bytes ("size" property in React)
                 UploadDate = record.UploadDate,
-                HasPassword = !string.IsNullOrEmpty(record.PasswordHash),
+                HasPassword = !string.IsNullOrEmpty(record.PasswordHash), // True if file is password protected
                 ExpiryDate = record.ExpiryDate,
                 DownloadLimit = record.DownloadLimit,
                 DownloadCount = record.DownloadCount,
@@ -60,32 +80,40 @@ namespace FileService.API.Services
             };
         }
 
-        // Uploads a file, saves disk content, thumbnail, and stores database metadata in MongoDB
+        /// <summary>
+        /// Core Upload Workflow:
+        /// 1. Validates single file size limit (UploadLimitService)
+        /// 2. Validates total user storage quota in MongoDB Atlas (UploadLimitService)
+        /// 3. Streams file binary to Firebase Storage cloud bucket (StorageService)
+        /// 4. Generates optional PNG thumbnail for image files (ThumbnailService)
+        /// 5. Hashes optional protection password with SHA256
+        /// 6. Saves file record document into MongoDB Atlas ("files" collection)
+        /// </summary>
         public async Task<FileRecordResponseDto> UploadFileAsync(int userId, UploadFileRequestDto dto)
         {
             var file = dto.File;
 
-            // 1. Check single file size limit
+            // Step 1: Check single file size limit (e.g. 50 MB max)
             var (isSingleValid, singleMsg) = _uploadLimitService.ValidateSingleFileSize(file.Length);
             if (!isSingleValid)
             {
                 throw new InvalidOperationException(singleMsg);
             }
 
-            // 2. Check user storage quota from MongoDB
+            // Step 2: Check total storage quota for user in MongoDB Atlas
             var (canUpload, quotaMsg) = await _uploadLimitService.CheckUserQuotaAsync(userId, file.Length);
             if (!canUpload)
             {
                 throw new InvalidOperationException(quotaMsg);
             }
 
-            // 3. Save physical file to disk
+            // Step 3: Upload physical file binary to Firebase Cloud Storage (or local disk fallback)
             var (storedFileName, fullPath) = await _storageService.SaveFileAsync(file);
 
-            // 4. Generate thumbnail if image file
+            // Step 4: Generate thumbnail preview image if file is an image (JPG, PNG, WEBP)
             string? thumbFileName = await _thumbnailService.GenerateThumbnailAsync(file, storedFileName);
 
-            // 5. Parse optional expiry date string from frontend (e.g. "2026-08-15")
+            // Step 5: Parse optional expiration date string (e.g. "2026-12-31")
             DateTime? expiryDate = null;
             if (!string.IsNullOrWhiteSpace(dto.ExpiryDate) &&
                 DateTime.TryParse(dto.ExpiryDate, out DateTime parsedDate))
@@ -93,12 +121,12 @@ namespace FileService.API.Services
                 expiryDate = parsedDate.ToUniversalTime();
             }
 
-            // 6. Optional password hashing
+            // Step 6: Hash optional password with SHA256 (e.g., "123456")
             string? passwordHash = !string.IsNullOrWhiteSpace(dto.Password)
                 ? HashPassword(dto.Password)
                 : null;
 
-            // 7. Create the MongoDB document
+            // Step 7: Instantiate new MongoDB FileRecord document
             var fileRecord = new FileRecord
             {
                 UserId = userId,
@@ -114,19 +142,21 @@ namespace FileService.API.Services
                 ThumbnailPath = thumbFileName
             };
 
-            // Insert document into MongoDB "files" collection
+            // Step 8: Insert document into MongoDB Atlas "files" collection
             await _dbContext.Files.InsertOneAsync(fileRecord);
 
             return MapToDto(fileRecord);
         }
 
-        // Returns all files owned by the specified user, newest first
+        /// <summary>
+        /// Retrieves all file records owned by a specific user from MongoDB Atlas, ordered newest-first.
+        /// </summary>
         public async Task<IEnumerable<FileRecordResponseDto>> GetUserFilesAsync(int userId)
         {
-            // MongoDB filter: find all documents where userId matches
+            // Filter MongoDB documents matching UserId
             var filter = Builders<FileRecord>.Filter.Eq(f => f.UserId, userId);
 
-            // Sort by upload date descending (newest first)
+            // Sort by UploadDate descending (newest uploads first)
             var sort = Builders<FileRecord>.Sort.Descending(f => f.UploadDate);
 
             var files = await _dbContext.Files.Find(filter).Sort(sort).ToListAsync();
@@ -134,7 +164,9 @@ namespace FileService.API.Services
             return files.Select(MapToDto);
         }
 
-        // Gets file details by MongoDB ObjectId string
+        /// <summary>
+        /// Finds a specific file document by MongoDB ObjectId string (e.g. "64a1f2b3c4d5e6f7a8b9c0d1").
+        /// </summary>
         public async Task<FileRecordResponseDto?> GetFileByIdAsync(string fileId)
         {
             var filter = Builders<FileRecord>.Filter.Eq(f => f.Id, fileId);
@@ -144,22 +176,29 @@ namespace FileService.API.Services
             return MapToDto(fileRecord);
         }
 
-        // Verifies password for protected file access
+        /// <summary>
+        /// Verifies a user-supplied plaintext password against the SHA256 hash stored in MongoDB Atlas.
+        /// </summary>
         public async Task<bool> VerifyPasswordAsync(string fileId, string rawPassword)
         {
             var filter = Builders<FileRecord>.Filter.Eq(f => f.Id, fileId);
             var fileRecord = await _dbContext.Files.Find(filter).FirstOrDefaultAsync();
 
+            // If file record doesn't exist or has no password, verification passes
             if (fileRecord == null || string.IsNullOrEmpty(fileRecord.PasswordHash))
             {
-                return true; // No password protection set
+                return true;
             }
 
+            // Hash incoming user input and compare with stored hash
             string inputHash = HashPassword(rawPassword);
             return fileRecord.PasswordHash.Equals(inputHash, StringComparison.OrdinalIgnoreCase);
         }
 
-        // Validates constraints and retrieves physical file stream for download
+        /// <summary>
+        /// Validates expiration date, download limits, and password protection before preparing file stream for download.
+        /// Atomically increments MongoDB download count upon successful download.
+        /// </summary>
         public async Task<(FileStream? Stream, string ContentType, string FileName, string? ErrorMessage)> PrepareDownloadAsync(string fileId, string? password)
         {
             var filter = Builders<FileRecord>.Filter.Eq(f => f.Id, fileId);
@@ -170,19 +209,19 @@ namespace FileService.API.Services
                 return (null, string.Empty, string.Empty, "File not found.");
             }
 
-            // Check expiry date
+            // 1. Validate Expiration Date
             if (fileRecord.ExpiryDate.HasValue && DateTime.UtcNow > fileRecord.ExpiryDate.Value)
             {
                 return (null, string.Empty, string.Empty, "This file link has expired.");
             }
 
-            // Check download limit
+            // 2. Validate Maximum Download Limit
             if (fileRecord.DownloadLimit.HasValue && fileRecord.DownloadCount >= fileRecord.DownloadLimit.Value)
             {
                 return (null, string.Empty, string.Empty, "This file has reached its maximum download limit.");
             }
 
-            // Check password protection
+            // 3. Validate Password Security
             if (!string.IsNullOrEmpty(fileRecord.PasswordHash))
             {
                 if (string.IsNullOrEmpty(password) || !await VerifyPasswordAsync(fileId, password))
@@ -191,24 +230,26 @@ namespace FileService.API.Services
                 }
             }
 
-            // Retrieve disk stream
+            // 4. Retrieve Physical File Stream
             var stream = _storageService.GetFileStream(fileRecord.StoredFileName);
             if (stream == null)
             {
                 return (null, string.Empty, string.Empty, "File binary content not found on server disk.");
             }
 
-            // Increment download count in MongoDB using an atomic update
+            // 5. Increment Download Count in MongoDB Atlas atomically ($inc operation)
             var update = Builders<FileRecord>.Update.Inc(f => f.DownloadCount, 1);
             await _dbContext.Files.UpdateOneAsync(filter, update);
 
             return (stream, fileRecord.ContentType, fileRecord.FileName, null);
         }
 
-        // Deletes a file record from MongoDB and cleans up disk files
+        /// <summary>
+        /// Deletes file metadata document from MongoDB Atlas and purges stored object from Firebase Cloud Storage.
+        /// Enforces user ownership security check (UserId matching).
+        /// </summary>
         public async Task<bool> DeleteFileAsync(string fileId, int userId)
         {
-            // Only delete if the file belongs to this user (security check)
             var filter = Builders<FileRecord>.Filter.And(
                 Builders<FileRecord>.Filter.Eq(f => f.Id, fileId),
                 Builders<FileRecord>.Filter.Eq(f => f.UserId, userId)
@@ -220,19 +261,21 @@ namespace FileService.API.Services
                 return false;
             }
 
-            // Delete physical stored file from disk
+            // Delete physical stored object from Firebase Cloud Storage / disk
             _storageService.DeleteFile(fileRecord.StoredFileName);
 
-            // Delete thumbnail if present
+            // Delete thumbnail file if present
             _thumbnailService.DeleteThumbnail(fileRecord.ThumbnailPath);
 
-            // Remove the document from MongoDB
+            // Delete document record from MongoDB Atlas
             await _dbContext.Files.DeleteOneAsync(filter);
 
             return true;
         }
 
-        // Gets stream for thumbnail display
+        /// <summary>
+        /// Streams thumbnail image file stream for display on frontend file grid UI.
+        /// </summary>
         public async Task<FileStream?> GetThumbnailStreamAsync(string fileId)
         {
             var filter = Builders<FileRecord>.Filter.Eq(f => f.Id, fileId);
