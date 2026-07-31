@@ -368,3 +368,8 @@ FodyWeavers.xsd
 
 # Uploaded Files
 Uploads/
+
+# Firebase Service Account Credentials
+firebase-key.json
+*-firebase-adminsdk-*.json
+*.json.key
