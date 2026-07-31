@@ -1,56 +1,61 @@
-﻿using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
+﻿using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace AuthService.API.Services
 {
     public class GmailService
     {
+        private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
 
-        public GmailService(IConfiguration configuration)
+        public GmailService(HttpClient httpClient, IConfiguration configuration)
         {
+            _httpClient = httpClient;
             _configuration = configuration;
         }
 
-        public async Task SendEmailAsync(String toEmail, string subject, string body)
+        public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            var email = new MimeMessage();
+            var apiKey = _configuration["Resend:ApiKey"];
 
-            email.From.Add(
-                new MailboxAddress(
-                    "FileHub:AMD201", _configuration["Gmail:UserName"]!)
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new Exception("Resend API key is missing.");
+
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                "https://api.resend.com/emails"
             );
 
-            email.To.Add(
-                MailboxAddress.Parse(toEmail)
-            );
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", apiKey);
 
-            email.Subject = subject;
-            email.Body = new TextPart("plain")
+            var email = new
             {
-                Text = body
+                from = $"{_configuration["Resend:FromName"]} <{_configuration["Resend:From"]}>",
+                to = new[] { toEmail },
+                subject = subject,
+                text = body
             };
 
-            using var smtp = new SmtpClient();
-
-            smtp.Timeout = 30000;
-
-            await smtp.ConnectAsync(
-                "smtp.gmail.com",
-                465,
-                SecureSocketOptions.SslOnConnect
+            request.Content = new StringContent(
+                JsonSerializer.Serialize(email),
+                Encoding.UTF8,
+                "application/json"
             );
 
-            await smtp.AuthenticateAsync(
-                _configuration["Gmail:UserName"]!,
-                _configuration["Gmail:AppPassword"]!
-            );
+            var response = await _httpClient.SendAsync(request);
 
-            await smtp.SendAsync(email);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
 
-            await smtp.DisconnectAsync(true);
-
+                throw new Exception(
+                    $"Failed to send email via Resend.\n" +
+                    $"Status: {(int)response.StatusCode} {response.StatusCode}\n" +
+                    $"Response: {error}"
+                );
+            }
 
         }
     }

@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/Services/">
     <Project Path="AuthService.API/AuthService.API.csproj" />
-    <Project Path="C:/Users/admin/Desktop/FileService.API/FileService.API.csproj" />
+    <Project Path="C:/Users/admin/source/repos/CW-AMD201/FileService.API/FileService.API.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="AuthService.Tests/AuthService.Tests.csproj" />

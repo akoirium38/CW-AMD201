@@ -60,8 +60,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 ///
 
-//Email Service (MailSender)
-builder.Services.AddScoped<GmailService>();
+//Email Service (MailSender) new/ HTTP
+builder.Services.AddHttpClient<GmailService>();
 
 //OTP Service
 builder.Services.AddScoped<OtpService>();
