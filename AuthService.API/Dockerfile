@@ -31,5 +31,7 @@ COPY --from=build /app/publish .
 # Container listens on port 8080
 EXPOSE 8080
 
+ENV DOTNET_USE_POLLING_FILE_WATCHER=false
+
 # Start application
 ENTRYPOINT ["dotnet", "AuthService.API.dll"]
