@@ -23,8 +23,23 @@ builder.Services.AddSingleton<IMongoClient>(
 
 builder.Services.AddSingleton<AuthDbContext>();
 
-// Add services to the container.
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReact", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:7070",
+                "http://localhost:5173",
+                "http://localhost:7000"
+              )
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
+// Add services to the container.
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -105,7 +120,7 @@ var app = builder.Build();
 //}
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Disabled: running on HTTP locally
 
 app.UseCors("AllowReact");
 

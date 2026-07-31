@@ -2,11 +2,11 @@
   "Routes": [
     {
       "DownstreamPathTemplate": "/api/auth/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7001
+          "Port": 5186
         }
       ],
       "UpstreamPathTemplate": "/api/auth/{everything}",
@@ -19,11 +19,11 @@
     },
     {
       "DownstreamPathTemplate": "/api/files/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7002
+          "Port": 5201
         }
       ],
       "UpstreamPathTemplate": "/api/files/{everything}",
@@ -36,6 +36,6 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "https://localhost:7000"
+    "BaseUrl": "http://localhost:7000"
   }
 }
