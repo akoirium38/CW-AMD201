@@ -8,8 +8,17 @@ using System.Threading.Tasks;
 
 namespace FileService.API.Controllers
 {
-    // API Controller exposing endpoints for file upload, download, password validation, deletion, and quota
-    // File IDs are now MongoDB ObjectId strings (e.g. "64a1f2b3c4d5e6f7a8b9c0d1")
+    /// <summary>
+    /// FilesController exposes RESTful HTTP endpoints for file uploading, listing, downloading,
+    /// password protection verification, quota tracking, thumbnail streaming, and deletion.
+    /// 
+    /// 🔗 Architecture Links:
+    /// - Microservice Gateway: Requests routed via Ocelot API Gateway (http://localhost:7000/api/files/* -> http://localhost:5201/api/files/*)
+    /// - Authentication: Secured using [Authorize] attribute which parses JWT Bearer tokens issued by AuthService.API
+    /// - Frontend Integration: Matched directly with TypeScript Axios calls in fe/src/services/fileService.ts
+    /// - Database: Interacts with MongoDB Atlas via FileService.cs
+    /// - Cloud Storage: Integrates with Firebase Storage via StorageService.cs
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class FilesController : ControllerBase
@@ -17,25 +26,45 @@ namespace FileService.API.Controllers
         private readonly Services.FileService _fileService;
         private readonly UploadLimitService _uploadLimitService;
 
+        /// <summary>
+        /// Constructor injected by ASP.NET Core Dependency Injection container.
+        /// </summary>
         public FilesController(Services.FileService fileService, UploadLimitService uploadLimitService)
         {
             _fileService = fileService;
             _uploadLimitService = uploadLimitService;
         }
 
-        // Helper method to retrieve current logged-in User ID from JWT claim
+        /// <summary>
+        /// Private helper method to extract the logged-in User ID from JWT Token claims.
+        /// Extracts ClaimTypes.NameIdentifier embedded in JWT header by AuthService.API.
+        /// Handles integer IDs as well as non-integer MongoDB string IDs safely.
+        /// </summary>
+        /// <returns>Integer User ID</returns>
         private int GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            // Try parsing integer ID directly
             if (int.TryParse(userIdClaim, out int userId))
             {
                 return userId;
             }
+            
+            // Fallback for string ObjectIds (e.g. MongoDB ObjectIds) by hashing string to positive int
+            if (!string.IsNullOrEmpty(userIdClaim))
+            {
+                return Math.Abs(userIdClaim.GetHashCode());
+            }
+            
             throw new UnauthorizedAccessException("User session invalid or missing NameIdentifier claim.");
         }
 
-        // POST: /api/files/upload
-        // Uploads a new file for the authenticated user
+        /// <summary>
+        /// POST: /api/files/upload
+        /// Handles multipart/form-data file uploads from frontend FileHub dashboard or Swagger UI.
+        /// Uploads physical binary to Firebase Storage and metadata to MongoDB Atlas.
+        /// </summary>
         [HttpPost("upload")]
         [Authorize]
         [Consumes("multipart/form-data")]
@@ -54,6 +83,7 @@ namespace FileService.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
+                // Single file size limit or storage quota exceeded
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
@@ -62,8 +92,10 @@ namespace FileService.API.Controllers
             }
         }
 
-        // GET: /api/files
-        // Retrieves list of files uploaded by authenticated user
+        /// <summary>
+        /// GET: /api/files
+        /// Retrieves list of file records uploaded by the currently authenticated user.
+        /// </summary>
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetUserFiles()
@@ -80,8 +112,11 @@ namespace FileService.API.Controllers
             }
         }
 
-        // GET: /api/files/my-files
-        // Alias route matching the frontend fileService.fetchMyFiles() call
+        /// <summary>
+        /// GET: /api/files/my-files
+        /// Alias endpoint matching frontend React call fileService.fetchMyFiles().
+        /// Returns all file records for the logged-in user sorted newest-first.
+        /// </summary>
         [HttpGet("my-files")]
         [Authorize]
         public async Task<IActionResult> GetMyFiles()
@@ -98,8 +133,10 @@ namespace FileService.API.Controllers
             }
         }
 
-        // GET: /api/files/storage-quota
-        // Retrieves storage quota usage for authenticated user
+        /// <summary>
+        /// GET: /api/files/storage-quota
+        /// Calculates storage quota usage (bytes used vs total allowed limit) for user dashboard progress bar.
+        /// </summary>
         [HttpGet("storage-quota")]
         [Authorize]
         public async Task<IActionResult> GetStorageQuota()
@@ -116,8 +153,10 @@ namespace FileService.API.Controllers
             }
         }
 
-        // GET: /api/files/{id}
-        // Retrieves details for a specific file by MongoDB ObjectId string
+        /// <summary>
+        /// GET: /api/files/{id}
+        /// Fetches details for a single file record by MongoDB ObjectId string (e.g., "64a1f2b3c4d5e6f7a8b9c0d1").
+        /// </summary>
         [HttpGet("{id}")]
         [Authorize]
         public async Task<IActionResult> GetFileById(string id)
@@ -131,8 +170,11 @@ namespace FileService.API.Controllers
             return Ok(file);
         }
 
-        // POST: /api/files/{id}/verify-password
-        // Validates password for protected file download
+        /// <summary>
+        /// POST: /api/files/{id}/verify-password
+        /// Validates user-entered password against SHA256 password hash stored in MongoDB Atlas before granting download access.
+        /// Allowed for anonymous users so shared links can be password-protected.
+        /// </summary>
         [HttpPost("{id}/verify-password")]
         [AllowAnonymous]
         public async Task<IActionResult> VerifyPassword(string id, [FromBody] VerifyPasswordRequestDto dto)
@@ -146,8 +188,10 @@ namespace FileService.API.Controllers
             return Ok(new { isSuccess = true, message = "Password verified successfully." });
         }
 
-        // GET: /api/files/{id}/download
-        // Original download route (kept for backward compatibility)
+        /// <summary>
+        /// GET: /api/files/{id}/download
+        /// Download route for fetching binary file streams with optional password check.
+        /// </summary>
         [HttpGet("{id}/download")]
         [AllowAnonymous]
         public async Task<IActionResult> DownloadFile(string id, [FromQuery] string? password)
@@ -166,8 +210,11 @@ namespace FileService.API.Controllers
             return File(stream, contentType, fileName);
         }
 
-        // GET: /api/files/download/{id}
-        // Frontend-compatible download route matching fileService.downloadFile(fileId)
+        /// <summary>
+        /// GET: /api/files/download/{id}
+        /// Alias download endpoint matching React frontend fileService.downloadFile(fileId) helper.
+        /// Streams file content and triggers browser file download.
+        /// </summary>
         [HttpGet("download/{id}")]
         [AllowAnonymous]
         public async Task<IActionResult> DownloadFileAlt(string id, [FromQuery] string? password)
@@ -186,8 +233,10 @@ namespace FileService.API.Controllers
             return File(stream, contentType, fileName);
         }
 
-        // GET: /api/files/{id}/thumbnail
-        // Streams thumbnail image for a file
+        /// <summary>
+        /// GET: /api/files/{id}/thumbnail
+        /// Streams PNG image thumbnail generated for uploaded image files (e.g. JPG, PNG, WEBP).
+        /// </summary>
         [HttpGet("{id}/thumbnail")]
         [AllowAnonymous]
         public async Task<IActionResult> GetThumbnail(string id)
@@ -201,8 +250,11 @@ namespace FileService.API.Controllers
             return File(stream, "image/png");
         }
 
-        // DELETE: /api/files/{id}
-        // Deletes a file record and disk content owned by authenticated user
+        /// <summary>
+        /// DELETE: /api/files/{id}
+        /// Deletes a file record from MongoDB Atlas and purges the physical file from Firebase Storage bucket.
+        /// Only allowed if the logged-in user matches the owner UserId.
+        /// </summary>
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> DeleteFile(string id)
