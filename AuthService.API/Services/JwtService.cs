@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.SignalR;
@@ -23,7 +23,7 @@ namespace AuthService.API.Services
 
             var audience = _configuration["Jwt:Audience"];
 
-            var expireMinutes = int.Parse(_configuration["Jwt:ExprireMinutes"] ?? "60");
+            var expireMinutes = int.Parse(_configuration["Jwt:ExpireMinutes"] ?? _configuration["Jwt:ExprireMinutes"] ?? "60");
 
             var claims = new List<Claim>
             {
