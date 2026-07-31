@@ -36,8 +36,8 @@ namespace AuthService.API.Services
 
             await smtp.ConnectAsync(
                 "smtp.gmail.com",
-                587,
-                SecureSocketOptions.StartTls
+                465,
+                SecureSocketOptions.SslOnConnect
             );
 
             await smtp.AuthenticateAsync(
