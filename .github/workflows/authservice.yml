@@ -1,0 +1,34 @@
+name: AuthService CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore NuGet Packages
+        run: dotnet restore
+
+      - name: Build Solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run AuthService Tests
+        run: dotnet test AuthService.Test/AuthService.Test.csproj --configuration Release --no-build
+
+      - name: Build Docker Image
+        run: docker build -t authservice-api ./AuthService.API
