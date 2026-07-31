@@ -2,14 +2,14 @@ name: AuthService CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'AuthService.API/**'
       - 'AuthService.Tests/**'
       - '.github/workflows/authservice.yml'
 
   pull_request:
-    branches: [main]
+    branches: [master]
     paths:
       - 'AuthService.API/**'
       - 'AuthService.Tests/**'
