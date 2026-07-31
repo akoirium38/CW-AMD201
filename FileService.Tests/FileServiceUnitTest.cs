@@ -211,5 +211,39 @@ namespace FileService.Tests
             Assert.Contains("/thumbnail", result.ThumbnailUrl);
             _mockThumbnailService.Verify(t => t.GenerateThumbnailAsync(formFile, "guid_avatar.jpg"), Times.Once);
         }
+
+        [Fact]
+        public async Task UploadFileAsync_WithPassword123456_HashesPasswordAndVerifies()
+        {
+            // Arrange
+            int userId = 101;
+            var formFile = CreateMockFormFile("confidential.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+            var dto = new UploadFileRequestDto
+            {
+                File = formFile,
+                Password = "123456"
+            };
+
+            _mockUploadLimitService
+                .Setup(s => s.ValidateSingleFileSize(It.IsAny<long>()))
+                .Returns((true, string.Empty));
+
+            _mockUploadLimitService
+                .Setup(s => s.CheckUserQuotaAsync(userId, It.IsAny<long>()))
+                .ReturnsAsync((true, string.Empty));
+
+            _mockStorageService
+                .Setup(s => s.SaveFileAsync(formFile))
+                .ReturnsAsync(("guid_confidential.docx", "https://firebasestorage.googleapis.com/v0/b/amd201-cb545.firebasestorage.app/o/guid_confidential.docx?alt=media"));
+
+            // Act
+            var result = await _fileService.UploadFileAsync(userId, dto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("confidential.docx", result.FileName);
+            Assert.True(result.HasPassword);
+            Assert.NotNull(result.FileId);
+        }
     }
 }
