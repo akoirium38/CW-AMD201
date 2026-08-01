@@ -41,11 +41,11 @@ export function EditFile({ fileId }: EditFileProps) {
         }
     };
 
-    const handleLimitChange = (value: string | null) => {
-        if (value !== null) {
-            setLimit(value);
-        }
-    };
+    // const handleLimitChange = (value: string | null) => {
+    //     if (value !== null) {
+    //         setLimit(value);
+    //     }
+    // };
 
     useEffect(() => {
         const fetchInfo = async () => {

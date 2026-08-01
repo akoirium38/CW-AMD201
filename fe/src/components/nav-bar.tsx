@@ -1,5 +1,6 @@
+import logo from "../assets/logo.svg";
 import { useLocation, useNavigate } from "react-router"; // 1. Import useNavigate
-import { Cloud, FolderHeart, UploadCloud } from "lucide-react";
+import { FolderHeart, UploadCloud } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import {
     NavigationMenu,
@@ -24,7 +25,7 @@ import {
             className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
             >
             <a href="/" className="flex items-center gap-2 !no-underline !border-none !shadow-none !outline-none hover:!no-underline">
-                <img src="/src/assets/logo.svg" alt="Logo" className="w-10 h-10" />
+                <img src={logo} alt="Logo" className="w-10 h-10" />
                 <span className="text-xl font-semibold !no-underline">
                 FileHub
                 </span>

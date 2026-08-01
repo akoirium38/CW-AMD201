@@ -1,5 +1,6 @@
 "use client"
 
+import logo from "../assets/logo.svg";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Label } from "./ui/label";
@@ -83,7 +84,7 @@ export function LoginForm({
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center text-center gap-2">
             <a href="/" className="mx-auto block w-fit text-center">
-              <img src="src/assets/logo.svg" alt="Logo" className="h-25  w-25" />
+              <img src={logo} alt="Logo" className="h-25  w-25" />
             </a>
             <h1 className="text-2xl font-bold">Verify Your Email</h1>
             <p className="text-muted-foreground text-balance">
