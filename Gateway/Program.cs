@@ -3,27 +3,37 @@ using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add CORS
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
             .WithOrigins("http://localhost:7070")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
+string ocelotConfig = "ocelot.json";
+
+if (builder.Environment.IsEnvironment("Docker"))
+{
+    ocelotConfig = "ocelot.Docker.json";
+}
+else if (builder.Environment.IsProduction())
+{
+    ocelotConfig = "ocelot.Render.json";
+}
+
 builder.Configuration
     .AddJsonFile(
-        "ocelot.json",
+        ocelotConfig,
         optional: false,
         reloadOnChange: true);
 
-builder.Services.AddOcelot(
-    builder.Configuration);
+builder.Services.AddOcelot(builder.Configuration);
 
 var app = builder.Build();
 
