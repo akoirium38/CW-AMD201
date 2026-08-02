@@ -102,23 +102,41 @@ namespace FileService.API.Services
             // Option A: Upload directly to Firebase Cloud Storage bucket if credentials active
             if (_isFirebaseEnabled && _storageClient != null && !string.IsNullOrEmpty(_bucketName))
             {
-                // Stream file payload over HTTPS directly to Firebase Storage bucket
-                using (var stream = file.OpenReadStream())
-                {
-                    await _storageClient.UploadObjectAsync(
-                        bucket: _bucketName,
-                        objectName: storedFileName,
-                        contentType: file.ContentType ?? "application/octet-stream",
-                        source: stream
-                    );
-                }
+                // Try primary bucket name (e.g., "amd201-cb545.firebasestorage.app") and fallback bucket name ("amd201-cb545.appspot.com")
+                string[] bucketCandidates = new string[] { _bucketName, "amd201-cb545.appspot.com", "amd201-cb545" };
 
-                // Construct public Firebase Storage media download URL
-                string firebaseUrl = $"https://firebasestorage.googleapis.com/v0/b/{_bucketName}/o/{Uri.EscapeDataString(storedFileName)}?alt=media";
-                return (storedFileName, firebaseUrl);
+                foreach (var targetBucket in bucketCandidates)
+                {
+                    try
+                    {
+                        using (var stream = file.OpenReadStream())
+                        {
+                            await _storageClient.UploadObjectAsync(
+                                bucket: targetBucket,
+                                objectName: storedFileName,
+                                contentType: file.ContentType ?? "application/octet-stream",
+                                source: stream
+                            );
+                        }
+
+                        // Construct public Firebase Storage media download URL
+                        string firebaseUrl = $"https://firebasestorage.googleapis.com/v0/b/{targetBucket}/o/{Uri.EscapeDataString(storedFileName)}?alt=media";
+                        return (storedFileName, firebaseUrl);
+                    }
+                    catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        // If specific bucket format was not found, continue trying next candidate bucket name
+                        continue;
+                    }
+                    catch (Exception)
+                    {
+                        // On other network/cloud errors, break loop to fall back to local disk storage
+                        break;
+                    }
+                }
             }
 
-            // Option B: Fallback to local server disk storage
+            // Option B: Fallback to local server disk storage if Firebase Storage bucket unavailable
             string fullPath = Path.Combine(_uploadFolder, storedFileName);
             using (var stream = new FileStream(fullPath, FileMode.Create))
             {
