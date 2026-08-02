@@ -100,11 +100,10 @@ var app = builder.Build();
 // MongoDB Atlas creates the "files" collection automatically on the first InsertOneAsync call.
 
 // 7. HTTP Request Pipeline Configuration
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseHttpsRedirection();
 

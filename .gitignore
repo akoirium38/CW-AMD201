@@ -368,3 +368,7 @@ FodyWeavers.xsd
 
 # Uploaded Files
 Uploads/
+
+# Credentials
+FileService.API/Credentials/
+*.json

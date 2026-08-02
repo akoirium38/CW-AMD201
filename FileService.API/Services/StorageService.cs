@@ -53,9 +53,13 @@ namespace FileService.API.Services
             }
 
             // 2. Read Firebase bucket name and JSON Service Account credentials key file path from appsettings.json
-            _bucketName = configuration["Firebase:BucketName"];
-            string credentialPath = configuration["Firebase:CredentialFilePath"] ?? "firebase-key.json";
-            
+            _bucketName = configuration["Firebase:BucketName"]!;
+
+            string credentialPath =
+                Environment.GetEnvironmentVariable("CREDENTIALS") // for deployed on render
+                ?? configuration["Firebase:CredentialFilePath"] // for testing localy
+                ?? throw new InvalidOperationException("Firebase credential path is not configured.");
+
             // Resolve relative credential file path to absolute root path
             string fullCredentialPath = Path.IsPathRooted(credentialPath)
                 ? credentialPath

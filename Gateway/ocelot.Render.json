@@ -22,7 +22,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "FILE_SERVICE_RENDER_URL",
+          "Host": "fileservice-api.onrender.com",
           "Port": 443
         }
       ],
