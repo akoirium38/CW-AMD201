@@ -3,13 +3,18 @@ using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var allowedOrigins = new[]
+{
+    "http://localhost:7070",              // Local frontend
+    "https://cw-amd201.onrender.com"     // render frontedn
+};
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins("http://localhost:7070")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -31,7 +36,7 @@ builder.Configuration
     .AddJsonFile(
         ocelotConfig,
         optional: false,
-        reloadOnChange: true);
+        reloadOnChange: false);
 
 builder.Services.AddOcelot(builder.Configuration);
 

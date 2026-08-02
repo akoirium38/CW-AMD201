@@ -5,7 +5,7 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "AUTH_SERVICE_RENDER_URL",
+          "Host": "https://authservice-api-exnn.onrender.com",
           "Port": 443
         }
       ],
@@ -36,6 +36,6 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "https://GATEWAY_RENDER_URL"
+    "BaseUrl": "https://gateway-cpk0.onrender.com"
   }
 }
