@@ -120,7 +120,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
-app.UseCors("AllowReact");
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 
