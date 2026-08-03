@@ -30,6 +30,7 @@ export function EditFile({ fileId }: EditFileProps) {
     const [isLoadingInfo, setIsLoadingInfo] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [fileName, setFileName] = useState<string>("");
     const [expiry, setExpiry] = useState<string>("7");
     const [limit, setLimit] = useState<string>("0");
     const [changePassword, setChangePassword] = useState(false);
@@ -54,6 +55,7 @@ export function EditFile({ fileId }: EditFileProps) {
             try {
                 const info = await fileService.getFileDetails(fileId);
                 setFileInfo(info);
+                setFileName(info.fileName);
                 const fileDetails = info as FileRecord & { downloadLimit?: number };
                 if (fileDetails.downloadLimit) setLimit(fileDetails.downloadLimit.toString());
             } catch (error) {
@@ -82,13 +84,14 @@ export function EditFile({ fileId }: EditFileProps) {
         ).toISOString();
 
         const success = await updateFile(fileId, {
+            fileName: fileName.trim() || undefined,
             downloadLimit: Number(limit),
             expiryDate,
             password: changePassword ? password : undefined,
         });
 
-        // debug: ensure expiryDate is present
-        console.debug("updateFile payload:", { downloadLimit: Number(limit), expiryDate, password: changePassword ? password : undefined });
+        // debug: ensure payload is present
+        console.debug("updateFile payload:", { fileName, downloadLimit: Number(limit), expiryDate, password: changePassword ? password : undefined });
 
         setIsSubmitting(false);
 
@@ -156,6 +159,15 @@ export function EditFile({ fileId }: EditFileProps) {
 
                 {/* Form cập nhật */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-600">Tên file</label>
+                        <Input
+                            value={fileName}
+                            onChange={(e) => setFileName(e.target.value)}
+                            disabled={isSubmitting}
+                            className="rounded-xl h-11 bg-white/50 focus:bg-white transition-colors"
+                        />
+                    </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
                             <Clock className="w-4 h-4" /> Hết hạn sau (tính từ bây giờ)

@@ -72,7 +72,7 @@ export const fileService = {
         return res.data as Blob;
     }
     ,
-    updateFile: async (fileId: string, payload: { downloadLimit?: number; expiryDate?: string | null; password?: string | undefined }) => {
+    updateFile: async (fileId: string, payload: { fileName?: string | null; downloadLimit?: number; expiryDate?: string | null; password?: string | undefined }) => {
         console.debug("fileService.updateFile -> sending payload", { fileId, payload });
         const res = await api.put(`/files/${fileId}/access`, payload, { withCredentials: true });
         return res.data;
