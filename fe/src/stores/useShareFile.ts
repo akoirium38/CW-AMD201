@@ -115,16 +115,7 @@ export function useSharedFile(fileId: string | undefined) {
         
         setIsDownloading(true);
         try {
-            if (previewUrl && !(fileInfo.thumbnailUrl && previewUrl === fileInfo.thumbnailUrl)) {
-                const link = document.createElement("a");
-                link.href = previewUrl;
-                link.setAttribute("download", fileInfo.fileName);
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-            } else {
-                await downloadFile(fileId, fileInfo.fileName, fileInfo.hasPassword ? password : undefined);
-            }
+            await downloadFile(fileId, fileInfo.fileName, fileInfo.hasPassword ? password : undefined);
         } catch (error) {
             console.error("Lỗi khi tải file:", error);
             toast.error("Tải xuống thất bại. Tệp có thể đã hết hạn hoặc bị chặn.");
