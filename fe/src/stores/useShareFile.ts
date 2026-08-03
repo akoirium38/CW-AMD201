@@ -49,9 +49,20 @@ export function useSharedFile(fileId: string | undefined) {
 
                 if (checkIsImage(info.fileName)) {
                     if (info.thumbnailUrl) {
-                        console.debug("useSharedFile: using thumbnailUrl:", info.thumbnailUrl);
-                        setPreviewUrl(info.thumbnailUrl);
-                        setPreviewIsThumbnail(true);
+                        // Try to fetch thumbnail as blob and create object URL so it reliably displays
+                        try {
+                            setIsLoadingPreview(true);
+                            const thumbBlob = await fileService.getThumbnail(fileId);
+                            objectUrl = window.URL.createObjectURL(thumbBlob);
+                            setPreviewUrl(objectUrl);
+                            setPreviewIsThumbnail(true);
+                        } catch (err) {
+                            console.warn("Failed to fetch thumbnail blob, falling back to thumbnailUrl", err);
+                            setPreviewUrl(info.thumbnailUrl);
+                            setPreviewIsThumbnail(true);
+                        } finally {
+                            setIsLoadingPreview(false);
+                        }
                     } else if (!info.hasPassword || isPasswordVerified) {
                         setIsLoadingPreview(true);
                         try {
