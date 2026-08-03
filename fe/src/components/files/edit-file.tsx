@@ -87,6 +87,9 @@ export function EditFile({ fileId }: EditFileProps) {
             password: changePassword ? password : undefined,
         });
 
+        // debug: ensure expiryDate is present
+        console.debug("updateFile payload:", { downloadLimit: Number(limit), expiryDate, password: changePassword ? password : undefined });
+
         setIsSubmitting(false);
 
         if (success) {

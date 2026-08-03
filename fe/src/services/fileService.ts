@@ -60,6 +60,7 @@ export const fileService = {
     },
     getFileDetails: async (fileId: string) => {
         const res = await api.get(`/files/${fileId}`, {withCredentials:true});
+        console.debug("fileService.getFileDetails -> response", { fileId, data: res.data });
         return res.data as FileRecord;
     },
 
@@ -69,5 +70,11 @@ export const fileService = {
             withCredentials: true,
         });
         return res.data as Blob;
+    }
+    ,
+    updateFile: async (fileId: string, payload: { downloadLimit?: number; expiryDate?: string | null; password?: string | undefined }) => {
+        console.debug("fileService.updateFile -> sending payload", { fileId, payload });
+        const res = await api.put(`/files/${fileId}/access`, payload, { withCredentials: true });
+        return res.data;
     }
 };

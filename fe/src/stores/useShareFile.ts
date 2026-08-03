@@ -44,10 +44,12 @@ export function useSharedFile(fileId: string | undefined) {
             setIsPasswordVerified(false);
             try {
                     const info = await fileService.getFileDetails(fileId);
-                setFileInfo(info);
+                    console.debug("useSharedFile: file details:", info);
+                    setFileInfo(info);
 
                 if (checkIsImage(info.fileName)) {
                     if (info.thumbnailUrl) {
+                        console.debug("useSharedFile: using thumbnailUrl:", info.thumbnailUrl);
                         setPreviewUrl(info.thumbnailUrl);
                         setPreviewIsThumbnail(true);
                     } else if (!info.hasPassword || isPasswordVerified) {
