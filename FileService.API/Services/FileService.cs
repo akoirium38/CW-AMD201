@@ -75,7 +75,7 @@ namespace FileService.API.Services
                 ExpiryDate = record.ExpiryDate,
                 DownloadLimit = record.DownloadLimit,
                 DownloadCount = record.DownloadCount,
-                DownloadUrl = $"/api/files/download/{record.Id}",
+                DownloadUrl = $"/api/files/{record.Id}/download",
                 ThumbnailUrl = !string.IsNullOrEmpty(record.ThumbnailPath) ? $"/api/files/{record.Id}/thumbnail" : null
             };
         }

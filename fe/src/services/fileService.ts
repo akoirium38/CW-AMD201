@@ -37,7 +37,7 @@ export const fileService = {
 
     downloadFile: async (fileId: string, password?: string) =>{
         const query = password ? `?password=${encodeURIComponent(password)}` : "";
-        const res = await api.get(`/files/download/${fileId}${query}`, {responseType:"blob",});
+        const res = await api.get(`/files/${fileId}/download${query}`, {responseType:"blob",});
         return res.data;
     },
 

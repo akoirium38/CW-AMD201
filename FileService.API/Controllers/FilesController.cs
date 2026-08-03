@@ -210,28 +210,7 @@ namespace FileService.API.Controllers
             return File(stream, contentType, fileName);
         }
 
-        /// <summary>
-        /// GET: /api/files/download/{id}
-        /// Alias download endpoint matching React frontend fileService.downloadFile(fileId) helper.
-        /// Streams file content and triggers browser file download.
-        /// </summary>
-        [HttpGet("download/{id}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> DownloadFileAlt(string id, [FromQuery] string? password)
-        {
-            var (stream, contentType, fileName, errorMessage) = await _fileService.PrepareDownloadAsync(id, password);
-            if (errorMessage != null)
-            {
-                return BadRequest(new { message = errorMessage });
-            }
 
-            if (stream == null)
-            {
-                return NotFound(new { message = "File binary content missing." });
-            }
-
-            return File(stream, contentType, fileName);
-        }
 
         /// <summary>
         /// GET: /api/files/{id}/thumbnail
