@@ -158,7 +158,8 @@ namespace FileService.API.Controllers
         /// Fetches details for a single file record by MongoDB ObjectId string (e.g., "64a1f2b3c4d5e6f7a8b9c0d1").
         /// </summary>
         [HttpGet("{id}")]
-        [Authorize]
+        //[Authorize] 
+        [AllowAnonymous]
         public async Task<IActionResult> GetFileById(string id)
         {
             var file = await _fileService.GetFileByIdAsync(id);
@@ -259,6 +260,39 @@ namespace FileService.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "An error occurred while updating file: " + ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// PUT: /api/files/{id}/access
+        /// Updates file security and access limits (Password, ExpiryDate, MaxDownloads) in database.
+        /// Protected with [Authorize] and verifies user ownership.
+        /// </summary>
+        /// <param name="id">Target file ID</param>
+        /// <param name="request">Access settings update DTO</param>
+        [HttpPut("{id}/access")]
+        [Authorize]
+        public async Task<IActionResult> UpdateFileAccess(string id, [FromBody] UpdateFileRequestDto request)
+        {
+            try
+            {
+                // Step 1: Extract logged-in user ID from JWT token claims
+                int userId = GetCurrentUserId();
+
+                // Step 2: Update file access settings in MongoDB Atlas database
+                var updatedFile = await _fileService.UpdateFileAccessAsync(id, userId, request);
+
+                if (updatedFile == null)
+                {
+                    return NotFound(new { message = "File not found or you do not have permission to modify its access settings." });
+                }
+
+                // Step 3: Return simple success response message
+                return Ok(new { isSuccess = true, message = "File access settings updated successfully.", data = updatedFile });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating file access: " + ex.Message });
             }
         }
 

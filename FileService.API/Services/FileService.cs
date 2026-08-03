@@ -332,11 +332,26 @@ namespace FileService.API.Services
                 }
             }
 
-            // Step 5: Replace updated document in MongoDB Atlas database collection
+            // Step 5: Update DownloadLimit / MaxDownloads
+            if (dto.DownloadLimit.HasValue || dto.MaxDownloads.HasValue)
+            {
+                fileRecord.DownloadLimit = dto.DownloadLimit ?? dto.MaxDownloads;
+            }
+
+            // Step 6: Replace updated document in MongoDB Atlas database collection
             await _dbContext.Files.ReplaceOneAsync(filter, fileRecord);
 
-            // Step 6: Return updated DTO for response
+            // Step 7: Return updated DTO for response
             return MapToDto(fileRecord);
+        }
+
+        /// <summary>
+        /// Updates access control and security settings (Password, ExpiryDate, DownloadLimit) of an existing file.
+        /// Reuses UpdateFileMetadataAsync logic to avoid code duplication.
+        /// </summary>
+        public async Task<FileRecordResponseDto?> UpdateFileAccessAsync(string fileId, int userId, UpdateFileRequestDto dto)
+        {
+            return await UpdateFileMetadataAsync(fileId, userId, dto);
         }
 
         /// <summary>

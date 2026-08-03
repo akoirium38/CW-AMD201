@@ -254,13 +254,16 @@ namespace FileService.Tests
             {
                 FileName = "New_Name.pdf",
                 Password = "newpassword123",
-                ExpiryDate = "2026-12-31"
+                ExpiryDate = "2026-12-31",
+                DownloadLimit = 10
             };
 
             // Assert
             Assert.Equal("New_Name.pdf", dto.FileName);
             Assert.Equal("newpassword123", dto.Password);
             Assert.Equal("2026-12-31", dto.ExpiryDate);
+            Assert.Equal(10, dto.DownloadLimit);
+            Assert.Equal(10, dto.MaxDownloads);
         }
     }
 }
