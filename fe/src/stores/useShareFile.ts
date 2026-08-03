@@ -140,6 +140,7 @@ export function useSharedFile(fileId: string | undefined) {
         previewUrl,
         isLoadingPreview,
         isImage: fileInfo ? checkIsImage(fileInfo.fileName) : false,
+        previewIsThumbnail,
         fileSizeMB: fileInfo ? formatSizeInMB(fileInfo.size) : "0.00",
         password,
         setPassword,
