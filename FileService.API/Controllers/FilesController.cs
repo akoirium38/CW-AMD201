@@ -189,10 +189,10 @@ namespace FileService.API.Controllers
         }
 
         /// <summary>
-        /// GET: /api/files/{id}/download
+        /// GET: /api/files/download/{id}
         /// Download route for fetching binary file streams with optional password check.
         /// </summary>
-        [HttpGet("{id}/download")]
+        [HttpGet("download/{id}")]
         [AllowAnonymous]
         public async Task<IActionResult> DownloadFile(string id, [FromQuery] string? password)
         {
