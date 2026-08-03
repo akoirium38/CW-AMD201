@@ -35,8 +35,14 @@ export const fileService = {
         return res.data;
     },
 
-    downloadFile: async (fileId: string) =>{
-        const res = await api.get(`/files/download/${fileId}`, {responseType:"blob",});
+    downloadFile: async (fileId: string, password?: string) =>{
+        const query = password ? `?password=${encodeURIComponent(password)}` : "";
+        const res = await api.get(`/files/download/${fileId}${query}`, {responseType:"blob",});
+        return res.data;
+    },
+
+    verifyPassword: async (fileId: string, password: string) => {
+        const res = await api.post(`/files/${fileId}/verify-password`, { password }, { withCredentials:true });
         return res.data;
     },
 

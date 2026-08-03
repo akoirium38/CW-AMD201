@@ -25,7 +25,7 @@ export interface FileState {
 
     fetchMyFiles: () => Promise<void>,
     uploadFile: (file: File, options?: { expiryDate?:string; downloadLimit?: number; password?: string}) => Promise<boolean>
-    downloadFile: (fileId:string, filename: string) => Promise<boolean>
+    downloadFile: (fileId:string, filename: string, password?: string) => Promise<boolean>
     deleteFile: (fileId: string) => Promise<boolean>
     updateFile: (fileId: string, payload: UpdateFilePayload) => Promise<boolean>
 

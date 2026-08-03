@@ -46,6 +46,13 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
         previewUrl,
         isLoadingPreview,
         isImage,
+        fileSizeMB,
+        password,
+        setPassword,
+        passwordError,
+        setPasswordError,
+        isCheckingPassword,
+        isPasswordVerified,
         handleDownloadClick
     } = useSharedFile(fileId);
 
@@ -127,7 +134,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                                 <dt className="text-[10px] uppercase tracking-widest text-neutral-400">
                                     Dung lượng
                                 </dt>
-                                <dd className="font-semibold text-black">{fileInfo.size} MB</dd>
+                                <dd className="font-semibold text-black">{fileSizeMB} MB</dd>
                             </div>
                             <div className="flex flex-col items-center gap-0.5 py-3">
                                 <dt className="text-[10px] uppercase tracking-widest text-neutral-400">
@@ -137,12 +144,43 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                             </div>
                         </dl>
 
+                        {fileInfo.hasPassword ? (
+                            <div className="space-y-2 rounded-xl border border-black/10 bg-neutral-100/70 p-3">
+                                <label className="text-[10px] uppercase tracking-widest text-neutral-500">
+                                    Mật khẩu
+                                </label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (passwordError) {
+                                            setPasswordError("");
+                                        }
+                                    }}
+                                    placeholder="Nhập mật khẩu"
+                                    className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-black outline-none"
+                                />
+                                {passwordError ? (
+                                    <p className="text-sm text-red-600">{passwordError}</p>
+                                ) : null}
+                                {isPasswordVerified ? (
+                                    <p className="text-sm text-green-600">Mật khẩu đúng, bạn có thể tải xuống.</p>
+                                ) : null}
+                            </div>
+                        ) : null}
+
                         <Button
                             onClick={handleDownloadClick}
-                            disabled={isDownloading}
+                            disabled={isDownloading || isCheckingPassword}
                             className="h-12 w-full rounded-xl bg-black text-white hover:bg-neutral-800 disabled:bg-neutral-300"
                         >
-                            {isDownloading ? (
+                            {isCheckingPassword ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Đang kiểm tra...
+                                </>
+                            ) : isDownloading ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                     Đang xử lý...
@@ -150,7 +188,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                             ) : (
                                 <>
                                     <ArrowDownToLine className="h-4 w-4" />
-                                    Tải xuống máy
+                                    {fileInfo.hasPassword && !isPasswordVerified ? "Xác minh mật khẩu" : "Tải xuống máy"}
                                 </>
                             )}
                         </Button>

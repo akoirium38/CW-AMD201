@@ -48,10 +48,10 @@ export const useFileStore = create<FileState>((set, get) => ({
         }
     },
 
-    downloadFile: async (fileId: string, filename: string) => {
+    downloadFile: async (fileId: string, filename: string, password?: string) => {
         try {
             toast.success("Preparing your download...");
-            const blobData = await fileService.downloadFile(fileId);
+            const blobData = await fileService.downloadFile(fileId, password);
             
             const url = window.URL.createObjectURL(new Blob([blobData]));
             const link = document.createElement('a');

@@ -12,6 +12,11 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
+const formatSizeInMB = (sizeInBytes: number) => {
+    if (!sizeInBytes || Number.isNaN(sizeInBytes)) return "0.00 MB";
+    return `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`;
+};
+
 export function MyFiles() {
     const navigate = useNavigate();
     const { files, loading, fetchMyFiles, deleteFile } = useFileStore();
@@ -60,7 +65,7 @@ export function MyFiles() {
                                         <span className="font-medium text-slate-800">{file.fileName}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell>{file.size.toFixed(2)} MB</TableCell>
+                                <TableCell>{formatSizeInMB(file.size)}</TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-1 text-slate-800">
                                         <Download className="h-4 w-4" />
