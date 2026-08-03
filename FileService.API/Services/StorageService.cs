@@ -103,11 +103,17 @@ namespace FileService.API.Services
             string safeFileName = Path.GetFileName(file.FileName);
             string storedFileName = $"{uniquePrefix}_{safeFileName}";
 
-            // Option A: Upload directly to Firebase Cloud Storage bucket if credentials active
+            // Save to local server disk storage to guarantee all file types can be streamed for download
+            string fullPath = Path.Combine(_uploadFolder, storedFileName);
+            using (var localStream = new FileStream(fullPath, FileMode.Create))
+            {
+                await file.CopyToAsync(localStream);
+            }
+
+            // Option A: Upload to Firebase Cloud Storage bucket if credentials active
             if (_isFirebaseEnabled && _storageClient != null && !string.IsNullOrEmpty(_bucketName))
             {
-                // Try primary bucket name (e.g., "amd201-cb545.firebasestorage.app") and fallback bucket name ("amd201-cb545.appspot.com")
-                string[] bucketCandidates = new string[] { _bucketName, "amd201-cb545.appspot.com", "amd201-cb545" };
+                string[] bucketCandidates = new string[] { _bucketName, "amd201-cb545.firebasestorage.app", "amd201-cb545.appspot.com", "amd201-cb545" };
 
                 foreach (var targetBucket in bucketCandidates)
                 {
@@ -127,43 +133,65 @@ namespace FileService.API.Services
                         string firebaseUrl = $"https://firebasestorage.googleapis.com/v0/b/{targetBucket}/o/{Uri.EscapeDataString(storedFileName)}?alt=media";
                         return (storedFileName, firebaseUrl);
                     }
-                    catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
-                    {
-                        // If specific bucket format was not found, continue trying next candidate bucket name
-                        continue;
-                    }
                     catch (Exception)
                     {
-                        // On other network/cloud errors, break loop to fall back to local disk storage
-                        break;
+                        continue;
                     }
                 }
-            }
-
-            // Option B: Fallback to local server disk storage if Firebase Storage bucket unavailable
-            string fullPath = Path.Combine(_uploadFolder, storedFileName);
-            using (var stream = new FileStream(fullPath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
             }
 
             return (storedFileName, fullPath);
         }
 
         /// <summary>
-        /// Retrieves a FileStream for reading file content from local server storage.
+        /// Retrieves a Stream for reading file content from local server storage or Firebase Cloud Storage.
         /// </summary>
-        /// <param name="storedFileName">Unique file name stored on disk</param>
-        /// <returns>FileStream or null if file not found</returns>
+        /// <param name="storedFileName">Unique stored file name</param>
+        /// <returns>Stream or null if file not found</returns>
+        public virtual async Task<Stream?> GetFileStreamAsync(string storedFileName)
+        {
+            // 1. Check local server disk storage first
+            string fullPath = Path.Combine(_uploadFolder, storedFileName);
+            if (File.Exists(fullPath))
+            {
+                return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            }
+
+            // 2. Fallback to fetch from Firebase Cloud Storage bucket if not on local disk
+            if (_isFirebaseEnabled && _storageClient != null && !string.IsNullOrEmpty(_bucketName))
+            {
+                string[] bucketCandidates = new string[] { _bucketName, "amd201-cb545.firebasestorage.app", "amd201-cb545.appspot.com", "amd201-cb545" };
+                foreach (var targetBucket in bucketCandidates)
+                {
+                    try
+                    {
+                        var memoryStream = new MemoryStream();
+                        await _storageClient.DownloadObjectAsync(targetBucket, storedFileName, memoryStream);
+                        memoryStream.Position = 0;
+                        return memoryStream;
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Synchronous retrieval fallback for legacy calls.
+        /// </summary>
         public virtual FileStream? GetFileStream(string storedFileName)
         {
             string fullPath = Path.Combine(_uploadFolder, storedFileName);
-            if (!File.Exists(fullPath))
+            if (File.Exists(fullPath))
             {
-                return null;
+                return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             }
 
-            return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return null;
         }
 
         /// <summary>

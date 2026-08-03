@@ -199,7 +199,7 @@ namespace FileService.API.Services
         /// Validates expiration date, download limits, and password protection before preparing file stream for download.
         /// Atomically increments MongoDB download count upon successful download.
         /// </summary>
-        public async Task<(FileStream? Stream, string ContentType, string FileName, string? ErrorMessage)> PrepareDownloadAsync(string fileId, string? password)
+        public async Task<(Stream? Stream, string ContentType, string FileName, string? ErrorMessage)> PrepareDownloadAsync(string fileId, string? password)
         {
             var filter = Builders<FileRecord>.Filter.Eq(f => f.Id, fileId);
             var fileRecord = await _dbContext.Files.Find(filter).FirstOrDefaultAsync();
@@ -230,11 +230,11 @@ namespace FileService.API.Services
                 }
             }
 
-            // 4. Retrieve Physical File Stream
-            var stream = _storageService.GetFileStream(fileRecord.StoredFileName);
+            // 4. Retrieve Physical File Stream from local storage or cloud
+            var stream = await _storageService.GetFileStreamAsync(fileRecord.StoredFileName);
             if (stream == null)
             {
-                return (null, string.Empty, string.Empty, "File binary content not found on server disk.");
+                return (null, string.Empty, string.Empty, "File binary content not found on server disk or cloud storage.");
             }
 
             // 5. Increment Download Count in MongoDB Atlas atomically ($inc operation)
