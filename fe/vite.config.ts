@@ -13,17 +13,5 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-  },
-  server: {
-    proxy: {
-      '/api/auth': {
-        target: 'http://localhost:5186',
-        changeOrigin: true,
-      },
-      '/api/files': {
-        target: 'http://localhost:5186',
-        changeOrigin: true,
-      },
-    },
-  },
+  }
 })
