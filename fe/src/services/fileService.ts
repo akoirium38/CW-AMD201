@@ -61,5 +61,13 @@ export const fileService = {
     getFileDetails: async (fileId: string) => {
         const res = await api.get(`/files/${fileId}`, {withCredentials:true});
         return res.data as FileRecord;
+    },
+
+    getThumbnail: async (fileId: string) => {
+        const res = await api.get(`/files/${fileId}/thumbnail`, {
+            responseType: "blob",
+            withCredentials: true,
+        });
+        return res.data as Blob;
     }
 };

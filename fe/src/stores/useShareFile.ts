@@ -25,6 +25,7 @@ export function useSharedFile(fileId: string | undefined) {
     const [isDownloading, setIsDownloading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+    const [previewIsThumbnail, setPreviewIsThumbnail] = useState(false);
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState("");
     const [isCheckingPassword, setIsCheckingPassword] = useState(false);
@@ -37,6 +38,7 @@ export function useSharedFile(fileId: string | undefined) {
             if (!fileId) return;
             setIsLoadingInfo(true);
             setPreviewUrl(null);
+            setPreviewIsThumbnail(false);
             setPassword("");
             setPasswordError("");
             setIsPasswordVerified(false);
@@ -47,11 +49,21 @@ export function useSharedFile(fileId: string | undefined) {
                 if (checkIsImage(info.fileName)) {
                     if (info.thumbnailUrl) {
                         setPreviewUrl(info.thumbnailUrl);
+                        setPreviewIsThumbnail(true);
                     } else if (!info.hasPassword || isPasswordVerified) {
                         setIsLoadingPreview(true);
-                        const blob = await fileService.downloadFile(fileId);
-                        objectUrl = window.URL.createObjectURL(new Blob([blob]));
-                        setPreviewUrl(objectUrl);
+                        try {
+                            const blob = await fileService.getThumbnail(fileId);
+                            objectUrl = window.URL.createObjectURL(blob);
+                            setPreviewUrl(objectUrl);
+                            setPreviewIsThumbnail(true);
+                        } catch (thumbnailError) {
+                            console.warn("Thumbnail not available, falling back to full image preview", thumbnailError);
+                            const blob = await fileService.downloadFile(fileId, info.hasPassword ? password : undefined);
+                            objectUrl = window.URL.createObjectURL(new Blob([blob]));
+                            setPreviewUrl(objectUrl);
+                            setPreviewIsThumbnail(false);
+                        }
                     }
                 }
             } catch (error) {
@@ -103,15 +115,15 @@ export function useSharedFile(fileId: string | undefined) {
         
         setIsDownloading(true);
         try {
-            if (previewUrl) {
+            if (previewUrl && !previewIsThumbnail) {
                 const link = document.createElement("a");
                 link.href = previewUrl;
-                link.setAttribute("download", fileInfo.fileName); 
+                link.setAttribute("download", fileInfo.fileName);
                 document.body.appendChild(link);
                 link.click();
                 link.parentNode?.removeChild(link);
             } else {
-                await downloadFile(fileId, fileInfo.fileName, fileInfo.hasPassword ? password : undefined); 
+                await downloadFile(fileId, fileInfo.fileName, fileInfo.hasPassword ? password : undefined);
             }
         } catch (error) {
             console.error("Lỗi khi tải file:", error);
