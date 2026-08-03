@@ -340,6 +340,71 @@ namespace FileService.API.Services
         }
 
         /// <summary>
+        /// Updates access control and security settings (Password, ExpiryDate, MaxDownloads) of an existing file.
+        /// Step-by-step logic:
+        /// 1. Finds the file record by file ID and checks user ownership (UserId matching).
+        /// 2. Password check: If password is empty string "", password protection is removed (PasswordHash = null).
+        ///    If a new non-empty password is provided, it is hashed with SHA256 before storing.
+        /// 3. Expiry date check: Parses new UTC date string, or clears expiration if set to "".
+        /// 4. Download limit check: Updates maximum allowed download count (DownloadLimit).
+        /// 5. Saves changes to MongoDB Atlas using ReplaceOneAsync.
+        /// </summary>
+        public async Task<FileRecordResponseDto?> UpdateFileAccessAsync(string fileId, int userId, UpdateFileAccessDto dto)
+        {
+            // Step 1: Find file record in MongoDB matching fileId AND userId (ownership security check)
+            var filter = Builders<FileRecord>.Filter.And(
+                Builders<FileRecord>.Filter.Eq(f => f.Id, fileId),
+                Builders<FileRecord>.Filter.Eq(f => f.UserId, userId)
+            );
+
+            var fileRecord = await _dbContext.Files.Find(filter).FirstOrDefaultAsync();
+
+            // If file record does not exist or logged-in user does not own it, return null
+            if (fileRecord == null)
+            {
+                return null;
+            }
+
+            // Step 2: Handle Password removal or update
+            if (dto.Password != null)
+            {
+                if (dto.Password == string.Empty)
+                {
+                    // Password Removal Check: Empty string "" means user wants to remove password protection
+                    fileRecord.PasswordHash = null;
+                }
+                else if (!string.IsNullOrWhiteSpace(dto.Password))
+                {
+                    // Hash new password using SHA256 encryption before storing in database
+                    fileRecord.PasswordHash = HashPassword(dto.Password);
+                }
+            }
+
+            // Step 3: Handle Expiry Date update or removal
+            if (dto.ExpiryDate != null)
+            {
+                if (dto.ExpiryDate == string.Empty)
+                {
+                    // Empty string "" means clear expiry date restriction
+                    fileRecord.ExpiryDate = null;
+                }
+                else if (DateTime.TryParse(dto.ExpiryDate, out DateTime parsedDate))
+                {
+                    fileRecord.ExpiryDate = parsedDate.ToUniversalTime();
+                }
+            }
+
+            // Step 4: Handle Max Downloads limitation update
+            fileRecord.DownloadLimit = dto.MaxDownloads;
+
+            // Step 5: Save database changes to MongoDB Atlas
+            await _dbContext.Files.ReplaceOneAsync(filter, fileRecord);
+
+            // Step 6: Return updated DTO object for HTTP 200 response
+            return MapToDto(fileRecord);
+        }
+
+        /// <summary>
         /// Streams thumbnail image file stream for display on frontend file grid UI.
         /// </summary>
         public async Task<FileStream?> GetThumbnailStreamAsync(string fileId)

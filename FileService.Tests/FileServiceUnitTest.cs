@@ -262,5 +262,22 @@ namespace FileService.Tests
             Assert.Equal("newpassword123", dto.Password);
             Assert.Equal("2026-12-31", dto.ExpiryDate);
         }
+
+        [Fact]
+        public void UpdateFileAccessDto_CanSetAndGetProperties()
+        {
+            // Arrange & Act
+            var dto = new UpdateFileAccessDto
+            {
+                Password = "secretpassword",
+                ExpiryDate = "2026-12-31",
+                MaxDownloads = 10
+            };
+
+            // Assert
+            Assert.Equal("secretpassword", dto.Password);
+            Assert.Equal("2026-12-31", dto.ExpiryDate);
+            Assert.Equal(10, dto.MaxDownloads);
+        }
     }
 }
