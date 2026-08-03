@@ -63,9 +63,15 @@ import {
         return;
         }
         
+        // Convert expiry (days) to an ISO expiryDate string; 0 means no expiry
+        let expiryDate: string | undefined = undefined;
+        if (expiry && expiry !== "0") {
+            expiryDate = new Date(Date.now() + Number(expiry) * 24 * 60 * 60 * 1000).toISOString();
+        }
+
         const uploadOptions = {
         password: password || undefined,
-        expiryDate: expiry ??undefined,
+        expiryDate: expiryDate,
         downloadLimit: Number(limit),
         };
         

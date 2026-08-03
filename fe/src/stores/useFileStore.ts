@@ -103,6 +103,7 @@ export const useFileStore = create<FileState>((set, get) => ({
                             f.fileId === fileId
                                 ? ({
                                     ...f,
+                                    fileName: payload.fileName ?? f.fileName,
                                     downloadLimit: payload.downloadLimit,
                                     expiryDate: payload.expiryDate ?? null,
                                     hasPassword: payload.password ? true : f.hasPassword,
