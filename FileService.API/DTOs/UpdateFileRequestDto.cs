@@ -29,6 +29,21 @@ namespace FileService.API.DTOs
         /// Pass null to keep current expiry date, or empty string "" to clear expiration.
         /// </summary>
         public string? ExpiryDate { get; set; }
+
+        /// <summary>
+        /// Maximum download count allowed for this file link (e.g. 5, 10).
+        /// Pass null to allow unlimited downloads.
+        /// </summary>
+        public int? DownloadLimit { get; set; }
+
+        /// <summary>
+        /// Alias property for DownloadLimit.
+        /// </summary>
+        public int? MaxDownloads
+        {
+            get => DownloadLimit;
+            set => DownloadLimit = value;
+        }
     }
 
 }

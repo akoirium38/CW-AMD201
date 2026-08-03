@@ -271,7 +271,7 @@ namespace FileService.API.Controllers
         /// <param name="request">Access settings update DTO</param>
         [HttpPut("{id}/access")]
         [Authorize]
-        public async Task<IActionResult> UpdateFileAccess(string id, [FromBody] UpdateFileAccessDto request)
+        public async Task<IActionResult> UpdateFileAccess(string id, [FromBody] UpdateFileRequestDto request)
         {
             try
             {
