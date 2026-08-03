@@ -53,7 +53,8 @@ export const useFileStore = create<FileState>((set, get) => ({
             toast.success("Preparing your download...");
             const blobData = await fileService.downloadFile(fileId, password);
             
-            const url = window.URL.createObjectURL(new Blob([blobData]));
+            const blob = blobData instanceof Blob ? blobData : new Blob([blobData]);
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', filename);

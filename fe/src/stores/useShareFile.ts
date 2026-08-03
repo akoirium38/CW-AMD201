@@ -115,7 +115,7 @@ export function useSharedFile(fileId: string | undefined) {
         
         setIsDownloading(true);
         try {
-            if (previewUrl && !previewIsThumbnail) {
+            if (previewUrl && !(fileInfo.thumbnailUrl && previewUrl === fileInfo.thumbnailUrl)) {
                 const link = document.createElement("a");
                 link.href = previewUrl;
                 link.setAttribute("download", fileInfo.fileName);
