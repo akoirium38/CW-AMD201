@@ -41,11 +41,13 @@ export function useSharedFile(fileId: string | undefined) {
             setPasswordError("");
             setIsPasswordVerified(false);
             try {
-                const info = await fileService.getFileDetails(fileId);
+                    const info = await fileService.getFileDetails(fileId);
                 setFileInfo(info);
 
-                if (!info.hasPassword || isPasswordVerified) {
-                    if (checkIsImage(info.fileName)) {
+                if (checkIsImage(info.fileName)) {
+                    if (info.thumbnailUrl) {
+                        setPreviewUrl(info.thumbnailUrl);
+                    } else if (!info.hasPassword || isPasswordVerified) {
                         setIsLoadingPreview(true);
                         const blob = await fileService.downloadFile(fileId);
                         objectUrl = window.URL.createObjectURL(new Blob([blob]));
@@ -66,7 +68,7 @@ export function useSharedFile(fileId: string | undefined) {
         return () => {
             if (objectUrl) window.URL.revokeObjectURL(objectUrl);
         };
-    }, [fileId]);
+    }, [fileId, isPasswordVerified]);
 
     const handleDownloadClick = async () => {
         if (!fileId || !fileInfo) return;

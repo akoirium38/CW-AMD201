@@ -6,6 +6,7 @@ export interface FileRecord {
     expiryDate: string | null;
     downloadUrl?: string;
     hasPassword?: boolean;
+    thumbnailUrl?: string;
 }
 
 export interface UpdateFilePayload {
