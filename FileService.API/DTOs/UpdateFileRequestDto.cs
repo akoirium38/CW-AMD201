@@ -39,11 +39,11 @@ namespace FileService.API.DTOs
         /// <summary>
         /// Alias property for DownloadLimit.
         /// </summary>
-        public int? MaxDownloads
-        {
-            get => DownloadLimit;
-            set => DownloadLimit = value;
-        }
+        //public int? MaxDownloads
+        //{
+        //    get => DownloadLimit;
+        //    set => DownloadLimit = value;
+        //}
     }
 
 }
