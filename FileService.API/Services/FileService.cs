@@ -274,6 +274,72 @@ namespace FileService.API.Services
         }
 
         /// <summary>
+        /// Updates the metadata (FileName, Password, ExpiryDate) of an existing file record in MongoDB Atlas.
+        /// Verifies user ownership security (userId) before saving updates.
+        /// </summary>
+        /// <param name="fileId">MongoDB ObjectId string of the target file</param>
+        /// <param name="userId">Logged-in user ID extracted from JWT token</param>
+        /// <param name="dto">Update DTO containing new metadata values</param>
+        /// <returns>Updated FileRecordResponseDto or null if file not found / unauthorized</returns>
+        public async Task<FileRecordResponseDto?> UpdateFileMetadataAsync(string fileId, int userId, UpdateFileRequestDto dto)
+        {
+            // Step 1: Find file record in MongoDB matching fileId AND userId (ownership check)
+            var filter = Builders<FileRecord>.Filter.And(
+                Builders<FileRecord>.Filter.Eq(f => f.Id, fileId),
+                Builders<FileRecord>.Filter.Eq(f => f.UserId, userId)
+            );
+
+            var fileRecord = await _dbContext.Files.Find(filter).FirstOrDefaultAsync();
+
+            // If file does not exist or user doesn't own it, return null
+            if (fileRecord == null)
+            {
+                return null;
+            }
+
+            // Step 2: Update FileName if a new name is provided
+            if (!string.IsNullOrWhiteSpace(dto.FileName))
+            {
+                fileRecord.FileName = dto.FileName.Trim();
+            }
+
+            // Step 3: Update Password Hash
+            if (dto.Password != null)
+            {
+                if (dto.Password == string.Empty)
+                {
+                    // Empty string means remove password protection
+                    fileRecord.PasswordHash = null;
+                }
+                else if (!string.IsNullOrWhiteSpace(dto.Password))
+                {
+                    // Hash new password using SHA256
+                    fileRecord.PasswordHash = HashPassword(dto.Password);
+                }
+            }
+
+            // Step 4: Update ExpiryDate
+            if (dto.ExpiryDate != null)
+            {
+                if (dto.ExpiryDate == string.Empty)
+                {
+                    // Empty string means clear expiry date
+                    fileRecord.ExpiryDate = null;
+                }
+                else if (DateTime.TryParse(dto.ExpiryDate, out DateTime parsedDate))
+                {
+                    fileRecord.ExpiryDate = parsedDate.ToUniversalTime();
+                }
+            }
+
+            // Step 5: Replace updated document in MongoDB Atlas database collection
+            await _dbContext.Files.ReplaceOneAsync(filter, fileRecord);
+
+            // Step 6: Return updated DTO for response
+            return MapToDto(fileRecord);
+        }
+
+        /// <summary>
         /// Streams thumbnail image file stream for display on frontend file grid UI.
         /// </summary>
         public async Task<FileStream?> GetThumbnailStreamAsync(string fileId)

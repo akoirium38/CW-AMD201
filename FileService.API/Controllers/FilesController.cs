@@ -251,6 +251,38 @@ namespace FileService.API.Controllers
         }
 
         /// <summary>
+        /// PUT: /api/files/{id}
+        /// Updates existing file metadata (FileName, Password, ExpiryDate) in MongoDB Atlas.
+        /// Requires JWT Authentication [Authorize] and verifies user ownership.
+        /// </summary>
+        /// <param name="id">Target file ID</param>
+        /// <param name="request">Update DTO containing modified properties</param>
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> UpdateFile(string id, [FromBody] UpdateFileRequestDto request)
+        {
+            try
+            {
+                // Extract current user ID from JWT token claims
+                int userId = GetCurrentUserId();
+
+                // Call FileService to apply updates in MongoDB Atlas
+                var updatedFile = await _fileService.UpdateFileMetadataAsync(id, userId, request);
+
+                if (updatedFile == null)
+                {
+                    return NotFound(new { message = "File not found or you do not have permission to update it." });
+                }
+
+                return Ok(new { isSuccess = true, message = "File metadata updated successfully.", data = updatedFile });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating file: " + ex.Message });
+            }
+        }
+
+        /// <summary>
         /// DELETE: /api/files/{id}
         /// Deletes a file record from MongoDB Atlas and purges the physical file from Firebase Storage bucket.
         /// Only allowed if the logged-in user matches the owner UserId.
