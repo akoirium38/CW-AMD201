@@ -109,7 +109,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                                 <img
                                     src={previewUrl}
                                     alt={fileInfo.fileName}
-                                    className="max-h-[280px] max-w-full rounded-xl object-contain grayscale"
+                                    className="max-h-[280px] max-w-full rounded-xl object-contain"
                                 />
                             ) : null
                         ) : (

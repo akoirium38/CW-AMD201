@@ -85,7 +85,7 @@ import {
             ) : (
 
                 <button
-                onClick={() => navigate("/login")} 
+                onClick={() => navigate("/auth")} 
                 className="px-5 py-2 text-sm font-medium text-white bg-slate-800 rounded-full hover:bg-slate-700 transition-colors shadow-sm cursor-pointer"
                 >
                 Đăng nhập

@@ -17,35 +17,49 @@ namespace AuthService.API.Services
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            var apiKey = _configuration["MailerSend:ApiKey"];
+            var apiKey = _configuration["Mailjet:ApiKey"];
+            var secretKey = _configuration["Mailjet:SecretKey"];
 
-            if (string.IsNullOrWhiteSpace(apiKey))
-                throw new Exception("MailerSend API key is missing.");
+            if (string.IsNullOrWhiteSpace(apiKey) ||
+                string.IsNullOrWhiteSpace(secretKey))
+            {
+                throw new Exception("Mailjet API credentials are missing.");
+            }
+
+            var authToken = Convert.ToBase64String(
+                Encoding.ASCII.GetBytes($"{apiKey}:{secretKey}")
+            );
 
             var request = new HttpRequestMessage(
                 HttpMethod.Post,
-                "https://api.mailersend.com/v1/email"
+                "https://api.mailjet.com/v3.1/send"
             );
 
             request.Headers.Authorization =
-                new AuthenticationHeaderValue("Bearer", apiKey);
+                new AuthenticationHeaderValue("Basic", authToken);
 
             var email = new
             {
-                from = new
-                {
-                    email = _configuration["MailerSend:FromEmail"],
-                    name = _configuration["MailerSend:FromName"]
-                },
-                to = new[]
+                Messages = new[]
                 {
                     new
                     {
-                        email = toEmail
+                        From = new
+                        {
+                            Email = _configuration["Mailjet:FromEmail"],
+                            Name = _configuration["Mailjet:FromName"]
+                        },
+                        To = new[]
+                        {
+                            new
+                            {
+                                Email = toEmail
+                            }
+                        },
+                        Subject = subject,
+                        TextPart = body
                     }
-                },
-                subject = subject,
-                text = body
+                }
             };
 
             request.Content = new StringContent(
@@ -61,7 +75,7 @@ namespace AuthService.API.Services
                 var error = await response.Content.ReadAsStringAsync();
 
                 throw new Exception(
-                    $"Failed to send email via MailerSend.\n" +
+                    $"Failed to send email via Mailjet.\n" +
                     $"Status: {(int)response.StatusCode} {response.StatusCode}\n" +
                     $"Response: {error}"
                 );
