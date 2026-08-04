@@ -17,14 +17,14 @@ namespace AuthService.API.Services
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            var apiKey = _configuration["Resend:ApiKey"];
+            var apiKey = _configuration["MailerSend:ApiKey"];
 
             if (string.IsNullOrWhiteSpace(apiKey))
-                throw new Exception("Resend API key is missing.");
+                throw new Exception("MailerSend API key is missing.");
 
             var request = new HttpRequestMessage(
                 HttpMethod.Post,
-                "https://api.resend.com/emails"
+                "https://api.mailersend.com/v1/email"
             );
 
             request.Headers.Authorization =
@@ -32,8 +32,18 @@ namespace AuthService.API.Services
 
             var email = new
             {
-                from = $"{_configuration["Resend:FromName"]} <{_configuration["Resend:From"]}>",
-                to = new[] { toEmail },
+                from = new
+                {
+                    email = _configuration["MailerSend:FromEmail"],
+                    name = _configuration["MailerSend:FromName"]
+                },
+                to = new[]
+                {
+                    new
+                    {
+                        email = toEmail
+                    }
+                },
                 subject = subject,
                 text = body
             };
@@ -51,12 +61,11 @@ namespace AuthService.API.Services
                 var error = await response.Content.ReadAsStringAsync();
 
                 throw new Exception(
-                    $"Failed to send email via Resend.\n" +
+                    $"Failed to send email via MailerSend.\n" +
                     $"Status: {(int)response.StatusCode} {response.StatusCode}\n" +
                     $"Response: {error}"
                 );
             }
-
         }
     }
 }
