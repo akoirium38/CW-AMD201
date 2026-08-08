@@ -45,6 +45,7 @@ export function LoginForm({
   const register = useAuthStore((state) => state.register);
   const requestPasswordReset = useAuthStore((state) => state.requestPasswordReset);
   const resetPassword = useAuthStore((state) => state.resetPassword);
+  const loading = useAuthStore((state) => state.loading);
   const navigate = useNavigate();
 
   const [view, setView] = useState<"login" | "register" | "reset">("login");
@@ -199,7 +200,7 @@ export function LoginForm({
               )}
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={loading || loginForm.formState.isSubmitting}>
               Sign in
             </Button>
           </form>
@@ -233,7 +234,7 @@ export function LoginForm({
               )}
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={loading || registerForm.formState.isSubmitting}>
               Create account
             </Button>
           </form>
@@ -255,7 +256,7 @@ export function LoginForm({
                     <p className="text-sm text-red-600">{resetRequestForm.formState.errors.email.message}</p>
                   )}
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={loading || resetRequestForm.formState.isSubmitting}>
                   Send OTP
                 </Button>
               </form>
@@ -297,8 +298,8 @@ export function LoginForm({
                   )}
                 </div>
 
-                <div className="flex gap-2">
-                  <Button type="submit" className="w-full">
+                <div className="flex gap-2 col-span-2">
+                  <Button type="submit" className="w-full" disabled={loading || resetVerifyForm.formState.isSubmitting}>
                     Reset password
                   </Button>
                   <Button
