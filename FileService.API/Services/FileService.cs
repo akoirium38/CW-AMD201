@@ -300,7 +300,16 @@ namespace FileService.API.Services
             // Step 2: Update FileName if a new name is provided
             if (!string.IsNullOrWhiteSpace(dto.FileName))
             {
-                fileRecord.FileName = dto.FileName.Trim();
+                string originalExt = Path.GetExtension(fileRecord.FileName);
+                string newName = dto.FileName.Trim();
+                
+                // Preserve original extension if it's missing from the new name
+                if (!string.IsNullOrEmpty(originalExt) && !newName.EndsWith(originalExt, StringComparison.OrdinalIgnoreCase))
+                {
+                    newName += originalExt;
+                }
+                
+                fileRecord.FileName = newName;
             }
 
             // Step 3: Update Password Hash

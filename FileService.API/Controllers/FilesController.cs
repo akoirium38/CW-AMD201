@@ -12,7 +12,7 @@ namespace FileService.API.Controllers
     /// FilesController exposes RESTful HTTP endpoints for file uploading, listing, downloading,
     /// password protection verification, quota tracking, thumbnail streaming, and deletion.
     /// 
-    /// 🔗 Architecture Links:
+    /// Architecture Links:
     /// - Microservice Gateway: Requests routed via Ocelot API Gateway (http://localhost:7000/api/files/* -> http://localhost:5201/api/files/*)
     /// - Authentication: Secured using [Authorize] attribute which parses JWT Bearer tokens issued by AuthService.API
     /// - Frontend Integration: Matched directly with TypeScript Axios calls in fe/src/services/fileService.ts
@@ -158,8 +158,7 @@ namespace FileService.API.Controllers
         /// Fetches details for a single file record by MongoDB ObjectId string (e.g., "64a1f2b3c4d5e6f7a8b9c0d1").
         /// </summary>
         [HttpGet("{id}")]
-        //[Authorize] 
-        [AllowAnonymous]
+        [Authorize]
         public async Task<IActionResult> GetFileById(string id)
         {
             var file = await _fileService.GetFileByIdAsync(id);

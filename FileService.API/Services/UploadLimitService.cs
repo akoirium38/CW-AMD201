@@ -19,10 +19,10 @@ namespace FileService.API.Services
     {
         private readonly FileDbContext? _dbContext;
 
-        // Default maximum storage quota per user: 100 MB (104,857,600 bytes)
+        // Default maximum storage quota per user: 100 MB 
         public const long MaxStoragePerUserBytes = 100 * 1024 * 1024;
 
-        // Maximum allowed file size for a single upload: 50 MB (52,428,800 bytes)
+        // Maximum allowed file size for a single upload: 50 MB 
         public const long MaxSingleFileSizeBytes = 50 * 1024 * 1024;
 
         /// <summary>
