@@ -342,10 +342,14 @@ namespace FileService.API.Services
             }
 
             // Step 5: Update DownloadLimit / MaxDownloads
-            if (dto.DownloadLimit.HasValue || dto.MaxDownloads.HasValue)
+            // Convention: null = no change, 0 = remove limit (unlimited), > 0 = set new limit
+            int? newLimit = dto.DownloadLimit ?? dto.MaxDownloads;
+            if (newLimit.HasValue)
             {
-                fileRecord.DownloadLimit = dto.DownloadLimit ?? dto.MaxDownloads;
+                // 0 means "clear the limit" (make it unlimited), > 0 sets the new limit
+                fileRecord.DownloadLimit = newLimit.Value > 0 ? newLimit : null;
             }
+            // If newLimit is null, leave existing DownloadLimit unchanged
 
             // Step 6: Replace updated document in MongoDB Atlas database collection
             await _dbContext.Files.ReplaceOneAsync(filter, fileRecord);
