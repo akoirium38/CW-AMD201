@@ -21,34 +21,175 @@ namespace AuthService.API.Controllers
             _authService = authService;
         }
 
-        [HttpPost("request-otp")]
-        public async Task<IActionResult> RequestOtp([FromBody] RequestOtpDto request)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto request)
         {
-            await _authService.RequestOtpAsync(request.Email);
-
-            return Ok(new
+            if (string.IsNullOrWhiteSpace(request.Gmail))
             {
-                success = true,
-                message = "OTP has been sent."
-            });
-        }
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Gmail is required."
+                });
+            }
 
-        [HttpPost("verify-otp")]
-        public async Task<IActionResult> CheckOtp([FromBody] RequestVerifyOtpDto request)
-        {
-            var token = await _authService.VerifyOtp(request.Code, request.Email);
-
-            if (token == null)
+            if (string.IsNullOrWhiteSpace(request.Password))
             {
-                return BadRequest();
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Password is required."
+                });
+            }
+
+            if (request.Password.Length < 8)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Password must be at least 8 characters."
+                });
+            }
+
+            bool registered = await _authService.RegisterAsync(
+                request.Gmail,
+                request.Password
+            );
+
+            if (!registered)
+            {
+                return Conflict(new
+                {
+                    success = false,
+                    message = "Email already exists."
+                });
             }
 
             return Ok(new
             {
+                success = true,
+                message = "Account created successfully."
+            });
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Gmail))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Gmail is required."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Password is required."
+                });
+            }
+
+            var token = await _authService.LoginAsync(
+                request.Gmail,
+                request.Password
+            );
+
+            if (token == null)
+            {
+                return Unauthorized(new
+                {
+                    success = false,
+                    message = "Invalid email or password."
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Login successful.",
                 token = token
             });
         }
 
+        [HttpPost("request-password-reset")]
+        public async Task<IActionResult> RequestPasswordReset([FromBody] RequestOtpDto request)
+        {
+            await _authService.RequestPasswordResetAsync(
+                request.Email
+            );
+
+            return Ok(new
+            {
+                success = true,
+                message = "If the account exists, a password reset code has been sent."
+            });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(
+    [FromBody] ResetPasswordDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Gmail))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Gmail is required."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Otp))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "OTP is required."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "New password is required."
+                });
+            }
+
+            if (request.NewPassword.Length < 8)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Password must be at least 8 characters."
+                });
+            }
+
+            bool success = await _authService.ResetPasswordAsync(
+                request.Gmail,
+                request.Otp,
+                request.NewPassword
+            );
+
+            if (!success)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Invalid or expired OTP."
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Password has been reset successfully."
+            });
+        }
         
         [HttpGet("me")]
         public async Task<IActionResult> Athume()
