@@ -158,7 +158,7 @@ namespace FileService.API.Controllers
         /// Fetches details for a single file record by MongoDB ObjectId string (e.g., "64a1f2b3c4d5e6f7a8b9c0d1").
         /// </summary>
         [HttpGet("{id}")]
-        [Authorize]
+        [AllowAnonymous]
         public async Task<IActionResult> GetFileById(string id)
         {
             var file = await _fileService.GetFileByIdAsync(id);
