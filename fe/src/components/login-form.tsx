@@ -6,168 +6,322 @@ import { cn } from "@/lib/utils";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNavigate } from "react-router";
 
-
-const emailSchema = z.object({
+const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
-})
+  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+});
 
-const otpSchema = z.object({
+const registerSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+});
+
+const resetRequestSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+});
+
+const resetVerifySchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
   otp: z.string().length(6, { message: "OTP must be 6 digits" }),
-})
+  newPassword: z.string().min(8, { message: "Password must be at least 8 characters" }),
+});
 
-type EmailFormValues = z.infer<typeof emailSchema>
-type OtpFormValues = z.infer<typeof otpSchema>
+type LoginFormValues = z.infer<typeof loginSchema>;
+type RegisterFormValues = z.infer<typeof registerSchema>;
+type ResetRequestFormValues = z.infer<typeof resetRequestSchema>;
+type ResetVerifyFormValues = z.infer<typeof resetVerifySchema>;
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const authEmail = useAuthStore((state) => state.authEmail)
-  const authOtp = useAuthStore((state) => state.authOtp)
-  const [step, setStep] = useState<"email" | "otp">("email")
-  const [submittedEmail, setSubmittedEmail] = useState("")
-
+  const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
+  const requestPasswordReset = useAuthStore((state) => state.requestPasswordReset);
+  const resetPassword = useAuthStore((state) => state.resetPassword);
   const navigate = useNavigate();
 
-  const emailForm = useForm<EmailFormValues>({
-    resolver: zodResolver(emailSchema),
-    defaultValues: {
-      email: "",
-    },
-  })
+  const [view, setView] = useState<"login" | "register" | "reset">("login");
+  const [resetStep, setResetStep] = useState<"request" | "verify">("request");
 
-  const otpForm = useForm<OtpFormValues>({
-    resolver: zodResolver(otpSchema),
-    defaultValues: {
-      otp: "",
-    },
-  })
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
-  const onEmailSubmit = async (data: EmailFormValues) => {
-    const { email } = data;
-    const success = await authEmail(email);
+  const registerForm = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const resetRequestForm = useForm<ResetRequestFormValues>({
+    resolver: zodResolver(resetRequestSchema),
+    defaultValues: { email: "" },
+  });
+
+  const resetVerifyForm = useForm<ResetVerifyFormValues>({
+    resolver: zodResolver(resetVerifySchema),
+    defaultValues: { email: "", otp: "", newPassword: "" },
+  });
+
+  const handleLogin = async (data: LoginFormValues) => {
+    const success = await login(data.email, data.password);
     if (success) {
-      setStep("otp");
-      setSubmittedEmail(email);
-      console.log("Email submitted:", email);
-    } else {
-      emailForm.setError("email", { type: "manual", message: "Failed to send OTP. Please check your email and try again." });
-    }
-  }
-
-  const onOtpSubmit = async (data: OtpFormValues) => {
-    const success = await authOtp(submittedEmail, data.otp);
-    if (success) {
-      console.log("Verify code", data.otp, "for", submittedEmail)
       navigate("/");
     } else {
-      otpForm.setError("otp", { type: "manual", message: "Invalid OTP. Please try again." });
+      loginForm.setError("password", {
+        type: "manual",
+        message: "Invalid login credentials.",
+      });
     }
-  }
+  };
+
+  const handleRegister = async (data: RegisterFormValues) => {
+    const success = await register(data.email, data.password);
+    if (success) {
+      setView("login");
+      registerForm.reset();
+    }
+  };
+
+  const handleResetRequest = async (data: ResetRequestFormValues) => {
+    const success = await requestPasswordReset(data.email);
+    if (success) {
+      setResetStep("verify");
+      resetVerifyForm.setValue("email", data.email);
+    } else {
+      resetRequestForm.setError("email", {
+        type: "manual",
+        message: "Failed to send OTP. Please try again.",
+      });
+    }
+  };
+
+  const handleResetVerify = async (data: ResetVerifyFormValues) => {
+    const success = await resetPassword(data.email, data.otp, data.newPassword);
+    if (success) {
+      setView("login");
+      setResetStep("request");
+      resetVerifyForm.reset();
+      resetRequestForm.reset();
+    } else {
+      resetVerifyForm.setError("otp", {
+        type: "manual",
+        message: "Invalid OTP or password reset failed.",
+      });
+    }
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <form
-        onSubmit={
-          step === "email"
-            ? emailForm.handleSubmit(onEmailSubmit)
-            : otpForm.handleSubmit(onOtpSubmit)
-        }
-      >
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-center text-center gap-2">
-            <a href="/" className="mx-auto block w-fit text-center">
-              <img src={logo} alt="Logo" className="h-25  w-25" />
-            </a>
-            <h1 className="text-2xl font-bold">Verify Your Email</h1>
-            <p className="text-muted-foreground text-balance">
-              {step === "email"
-                ? "Enter the email to receive a verification code."
-                : `We sent a 6-digit code to ${submittedEmail}.`}
-            </p>
-          </div>
+      <div className="rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-lg shadow-slate-200/40 backdrop-blur-xl">
+        <div className="flex flex-col items-center text-center gap-2 mb-8">
+          <img src={logo} alt="Logo" className="h-16 w-16" />
+          <h1 className="text-3xl font-bold">
+            {view === "login"
+              ? "Welcome back"
+              : view === "register"
+              ? "Create an account"
+              : "Reset your password"}
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-md">
+            {view === "login"
+              ? "Sign in with your Gmail and password."
+              : view === "register"
+              ? "Create a new FileHub account using your Gmail."
+              : resetStep === "request"
+              ? "Enter your email to receive a password reset OTP."
+              : "Enter the OTP and your new password to reset your account."}
+          </p>
+        </div>
 
-          {step === "email" ? (
-            <div className="w-full max-w-md mx-auto">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="w-24 text-right text-lg font-medium">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your@example.com"
-                  {...emailForm.register("email")}
-                />
-                {emailForm.formState.errors.email && (
-                  <p className="text-sm text-red-600">
-                    {emailForm.formState.errors.email.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="w-full max-w-md mx-auto space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="otp" className="text-lg font-medium">
-                  Verification code
-                </Label>
-                <InputOTP
-                  id="otp"
-                  maxLength={6}
-                  value={otpForm.watch("otp") || ""}
-                  onChange={(value) => otpForm.setValue("otp", value, { shouldValidate: true })}
-                  containerClassName="justify-center gap-2"
-                >
-                  <InputOTPGroup>
-                    {Array.from({ length: 6 }).map((_, index) => (
-                      <InputOTPSlot key={index} index={index} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-                {otpForm.formState.errors.otp && (
-                  <p className="text-sm text-red-600">
-                    {otpForm.formState.errors.otp.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          <Button
+            type="button"
+            variant={view === "login" ? "secondary" : "ghost"}
+            onClick={() => {
+              setView("login");
+              setResetStep("request");
+            }}
+          >
+            Login
+          </Button>
+          <Button
+            type="button"
+            variant={view === "register" ? "secondary" : "ghost"}
+            onClick={() => {
+              setView("register");
+              setResetStep("request");
+            }}
+          >
+            Register
+          </Button>
+          <Button
+            type="button"
+            variant={view === "reset" ? "secondary" : "ghost"}
+            onClick={() => setView("reset")}
+          >
+            Reset Password
+          </Button>
+        </div>
 
-          <div className="w-full max-w-md mx-auto flex flex-col gap-3">
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={step === "email" ? emailForm.formState.isSubmitting : otpForm.formState.isSubmitting}
-            >
-              {step === "email" ? "Send Verification Code" : "Verify Code"}
+        {view === "login" && (
+          <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="login-email">Email</Label>
+              <Input
+                id="login-email"
+                type="email"
+                placeholder="user@gmail.com"
+                {...loginForm.register("email")}
+              />
+              {loginForm.formState.errors.email && (
+                <p className="text-sm text-red-600">{loginForm.formState.errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Password</Label>
+              <Input
+                id="login-password"
+                type="password"
+                placeholder="Your password"
+                {...loginForm.register("password")}
+              />
+              {loginForm.formState.errors.password && (
+                <p className="text-sm text-red-600">{loginForm.formState.errors.password.message}</p>
+              )}
+            </div>
+
+            <Button type="submit" className="w-full">
+              Sign in
             </Button>
+          </form>
+        )}
 
-            {step === "otp" && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => setStep("email")}
-              >
-                Change email
-              </Button>
+        {view === "register" && (
+          <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="register-email">Email</Label>
+              <Input
+                id="register-email"
+                type="email"
+                placeholder="user@gmail.com"
+                {...registerForm.register("email")}
+              />
+              {registerForm.formState.errors.email && (
+                <p className="text-sm text-red-600">{registerForm.formState.errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="register-password">Password</Label>
+              <Input
+                id="register-password"
+                type="password"
+                placeholder="Your password"
+                {...registerForm.register("password")}
+              />
+              {registerForm.formState.errors.password && (
+                <p className="text-sm text-red-600">{registerForm.formState.errors.password.message}</p>
+              )}
+            </div>
+
+            <Button type="submit" className="w-full">
+              Create account
+            </Button>
+          </form>
+        )}
+
+        {view === "reset" && (
+          <div className="space-y-4">
+            {resetStep === "request" ? (
+              <form onSubmit={resetRequestForm.handleSubmit(handleResetRequest)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="user@gmail.com"
+                    {...resetRequestForm.register("email")}
+                  />
+                  {resetRequestForm.formState.errors.email && (
+                    <p className="text-sm text-red-600">{resetRequestForm.formState.errors.email.message}</p>
+                  )}
+                </div>
+                <Button type="submit" className="w-full">
+                  Send OTP
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={resetVerifyForm.handleSubmit(handleResetVerify)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="verify-email">Email</Label>
+                  <Input
+                    id="verify-email"
+                    type="email"
+                    disabled
+                    {...resetVerifyForm.register("email")}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reset-otp">OTP</Label>
+                  <Input
+                    id="reset-otp"
+                    type="text"
+                    placeholder="123456"
+                    {...resetVerifyForm.register("otp")}
+                  />
+                  {resetVerifyForm.formState.errors.otp && (
+                    <p className="text-sm text-red-600">{resetVerifyForm.formState.errors.otp.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reset-password">New password</Label>
+                  <Input
+                    id="reset-password"
+                    type="password"
+                    placeholder="New password"
+                    {...resetVerifyForm.register("newPassword")}
+                  />
+                  {resetVerifyForm.formState.errors.newPassword && (
+                    <p className="text-sm text-red-600">{resetVerifyForm.formState.errors.newPassword.message}</p>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <Button type="submit" className="w-full">
+                    Reset password
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setResetStep("request");
+                      resetVerifyForm.reset();
+                    }}
+                  >
+                    Start again
+                  </Button>
+                </div>
+              </form>
             )}
           </div>
-        </div>
-      </form>
+        )}
+      </div>
 
-      <div className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+      <div className="px-6 text-center text-sm text-muted-foreground">
+        By continuing, you agree to our <a className="text-primary underline" href="#">Terms of Service</a> and <a className="text-primary underline" href="#">Privacy Policy</a>.
       </div>
     </div>
-  )
+  );
 }

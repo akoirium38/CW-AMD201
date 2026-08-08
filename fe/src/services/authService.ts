@@ -1,25 +1,48 @@
 import api from '@/lib/axios'
 
-
 export const authService = {
-    authEmail: async (email:string) =>{
-        const res = await api.post("/auth/request-otp", {email}, {withCredentials:true});
+    register: async (gmail: string, password: string) => {
+        const res = await api.post('/auth/register', { gmail, password });
         if (!res.data.success) {
-            throw new Error(res.data.message || "Failed to send OTP");
+            throw new Error(res.data.message || 'Registration failed');
         }
-        return res.data
-    },
-    authOtp: async (email:string,code:string) =>{
-        const res = await api.post("/auth/verify-otp", {email,code}, {withCredentials:true});
         return res.data;
     },
 
-    fetchMe: async () => {
-        const res = await api.get("/auth/me", {withCredentials:true});
-        return res.data.email;
-    },
-    logOut: async () => {
-        const res = await api.post("/auth/logout", {}, {withCredentials:true});
+    login: async (gmail: string, password: string) => {
+        const res = await api.post('/auth/login', { gmail, password });
+        if (!res.data.token) {
+            throw new Error(res.data.message || 'Login failed');
+        }
         return res.data;
-    }
+    },
+
+    requestPasswordReset: async (email: string) => {
+        const res = await api.post('/auth/request-password-reset', { email });
+        if (!res.data.success) {
+            throw new Error(res.data.message || 'Failed to request password reset');
+        }
+        return res.data;
+    },
+
+    resetPassword: async (gmail: string, otp: string, newPassword: string) => {
+        const res = await api.post('/auth/reset-password', {
+            gmail,
+            otp,
+            newPassword,
+        });
+        if (!res.data.success) {
+            throw new Error(res.data.message || 'Failed to reset password');
+        }
+        return res.data;
+    },
+
+    logOut: async () => {
+        try {
+            const res = await api.post('/auth/logout', {}, { withCredentials: true });
+            return res.data;
+        } catch (error) {
+            return { success: false };
+        }
+    },
 };

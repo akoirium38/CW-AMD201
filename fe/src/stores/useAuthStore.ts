@@ -1,22 +1,20 @@
-import {create } from "zustand";
-import {toast} from "sonner";
-import { authService } from "@/services/authService";
-import type { AuthState } from "@/types/store";
+import { create } from 'zustand';
+import { toast } from 'sonner';
+import { authService } from '@/services/authService';
+import type { AuthState } from '@/types/store';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export const useAuthStore = create<AuthState>()(
     persist(
-        (set, get) => ({
+        (set) => ({
             token: null,
-            user: null, 
+            user: null,
             email: null,
             loading: false,
 
-
-            setAuth: async (token, user) => {
-                set({ token, user });
+            setAuth: async (token, user, email) => {
+                set({ token, user, email });
             },
-
 
             logOut: async () => {
                 try {
@@ -24,49 +22,78 @@ export const useAuthStore = create<AuthState>()(
                     set({ token: null, email: null, user: null });
 
                     await authService.logOut();
-                    toast.success("Logged out successfully!");
+                    toast.success('Logged out successfully!');
                 } catch (error) {
-                    console.error("Logout failed:", error);
-                    toast.error("Logout failed. Please try again.");
+                    console.error('Logout failed:', error);
+                    toast.error('Logout failed. Please try again.');
                 } finally {
                     set({ loading: false });
-                    
                 }
-                
             },
 
-            authEmail: async (email: string) => {
+            login: async (email: string, password: string) => {
                 try {
                     set({ loading: true });
-                    
-                    await authService.authEmail(email);
+                    const { token } = await authService.login(email, password);
 
-                    toast.success("OTP sent to your email!");
+                    set({ token, email });
+                    toast.success('Welcome back!');
                     return true;
-
                 } catch (error) {
                     console.error(error);
-                    toast.error("Failed to send OTP. Please check your email and try again.");
+                    const message = error instanceof Error ? error.message : 'Login failed. Please try again.';
+                    toast.error(message);
                     return false;
                 } finally {
                     set({ loading: false });
                 }
             },
 
-            authOtp: async (email: string, code: string) => {
+            register: async (email: string, password: string) => {
                 try {
                     set({ loading: true });
-                    const { token } = await authService.authOtp(email, code);
-                    
-                    set({ token });
+                    await authService.register(email, password);
 
-                    await get().fetchMe();
-
-                    toast.success("Welcome to FileHub🎉");
+                    toast.success('Account created successfully! Please sign in.');
                     return true;
                 } catch (error) {
                     console.error(error);
-                    toast.error("Failed to verify OTP. Please try again.");
+                    const message = error instanceof Error ? error.message : 'Registration failed. Please try again.';
+                    toast.error(message);
+                    return false;
+                } finally {
+                    set({ loading: false });
+                }
+            },
+
+            requestPasswordReset: async (email: string) => {
+                try {
+                    set({ loading: true });
+                    await authService.requestPasswordReset(email);
+
+                    toast.success('OTP sent successfully.');
+                    return true;
+                } catch (error) {
+                    console.error(error);
+                    const message = error instanceof Error ? error.message : 'Failed to send OTP. Please try again.';
+                    toast.error(message);
+                    return false;
+                } finally {
+                    set({ loading: false });
+                }
+            },
+
+            resetPassword: async (email: string, otp: string, newPassword: string) => {
+                try {
+                    set({ loading: true });
+                    await authService.resetPassword(email, otp, newPassword);
+
+                    toast.success('Password updated successfully.');
+                    return true;
+                } catch (error) {
+                    console.error(error);
+                    const message = error instanceof Error ? error.message : 'Failed to reset password. Please try again.';
+                    toast.error(message);
                     return false;
                 } finally {
                     set({ loading: false });
@@ -75,25 +102,20 @@ export const useAuthStore = create<AuthState>()(
 
             fetchMe: async () => {
                 try {
-                    set({ loading: true }); 
+                    set({ loading: true });
                     const email = await authService.fetchMe();
-                    
-                    set({ email }); 
-                    
+                    set({ email });
                 } catch (error) {
-                    console.error("Failed to fetch user data. Please try again.", error);
-
-                    set({ email: null, token: null, user: null }); 
-                    toast.error("Failed to fetch user data. Please try again.");
-
+                    console.error('Failed to fetch user data. Please try again.', error);
+                    set({ email: null, token: null, user: null });
                 } finally {
                     set({ loading: false });
                 }
-            }
+            },
         }),
         {
-            name: 'auth-storage', 
-            storage: createJSONStorage(() => localStorage), 
+            name: 'auth-storage',
+            storage: createJSONStorage(() => localStorage),
         }
     )
 );
