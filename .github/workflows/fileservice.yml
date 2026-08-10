@@ -1,4 +1,4 @@
-name: FileService CI
+name: FileService CI/CD
 
 on:
   push:
