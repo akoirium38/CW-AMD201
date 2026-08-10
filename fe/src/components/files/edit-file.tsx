@@ -59,8 +59,8 @@ export function EditFile({ fileId }: EditFileProps) {
                 const fileDetails = info as FileRecord & { downloadLimit?: number };
                 if (fileDetails.downloadLimit) setLimit(fileDetails.downloadLimit.toString());
             } catch (error) {
-                console.error("Lỗi khi tải thông tin file:", error);
-                toast.error("Không thể tải thông tin file.");
+                console.error("Error fetching file info:", error);
+                toast.error("Cannot fetch file information.");
             } finally {
                 setIsLoadingInfo(false);
             }
@@ -73,7 +73,7 @@ export function EditFile({ fileId }: EditFileProps) {
         if (!fileId) return;
 
         if (changePassword && !password.trim()) {
-            toast.error("Vui lòng nhập mật khẩu mới hoặc bỏ chọn đổi mật khẩu");
+            toast.error("Please enter a new password or uncheck the change password option");
             return;
         }
 
@@ -104,7 +104,7 @@ export function EditFile({ fileId }: EditFileProps) {
         return (
             <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-500">
                 <Loader2 className="h-6 w-6 animate-spin" />
-                <p className="text-sm">Đang tải thông tin file...</p>
+                <p className="text-sm">Fetching file information...</p>
             </div>
         );
     }
@@ -112,9 +112,9 @@ export function EditFile({ fileId }: EditFileProps) {
     if (!fileInfo) {
         return (
             <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-                <p className="text-red-500">Không tìm thấy file này.</p>
+                <p className="text-red-500">Cannot find this file.</p>
                 <Button variant="ghost" onClick={() => navigate("/my-files")}>
-                    <ArrowLeft className="h-4 w-4 mr-2" /> Quay lại
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Back
                 </Button>
             </div>
         );
@@ -127,7 +127,7 @@ export function EditFile({ fileId }: EditFileProps) {
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                            Sửa cài đặt chia sẻ
+                            Edit Sharing Settings
                         </p>
                         <h1 className="text-lg font-semibold text-slate-800 break-all">
                             {fileInfo.fileName}
@@ -135,14 +135,14 @@ export function EditFile({ fileId }: EditFileProps) {
                     </div>
                 </div>
 
-                {/* Thông tin hiện tại */}
+                {/* Current Information */}
                 <div className="grid grid-cols-3 gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-center text-sm">
                     <div>
-                        <p className="text-xs text-slate-400">Lượt tải hiện tại</p>
+                        <p className="text-xs text-slate-400">Current Download Count</p>
                         <p className="font-semibold text-slate-800">{fileInfo.downloadCount}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-slate-400">Hết hạn hiện tại</p>
+                        <p className="text-xs text-slate-400">Current Expiry Date</p>
                         <p className="font-semibold text-slate-800">
                             {fileInfo.expiryDate
                                 ? new Date(fileInfo.expiryDate).toLocaleDateString("vi-VN")
@@ -150,9 +150,9 @@ export function EditFile({ fileId }: EditFileProps) {
                         </p>
                     </div>
                     <div>
-                        <p className="text-xs text-slate-400">Mật khẩu</p>
+                        <p className="text-xs text-slate-400">Password</p>
                         <p className="font-semibold text-slate-800">
-                            {fileInfo.hasPassword ? "Đang bật" : "Không có"}
+                            {fileInfo.hasPassword ? "Enabled" : "Not set"}
                         </p>
                     </div>
                 </div>
@@ -160,7 +160,7 @@ export function EditFile({ fileId }: EditFileProps) {
                 {/* Form cập nhật */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-600">Tên file</label>
+                        <label className="text-sm font-medium text-slate-600">File Name</label>
                         <Input
                             value={fileName}
                             onChange={(e) => setFileName(e.target.value)}
@@ -170,23 +170,23 @@ export function EditFile({ fileId }: EditFileProps) {
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
-                            <Clock className="w-4 h-4" /> Hết hạn sau (tính từ bây giờ)
+                            <Clock className="w-4 h-4" /> Expiry after (from now)
                         </label>
                         <Select value={expiry} onValueChange={handleExpiryChange} disabled={isSubmitting}>
                             <SelectTrigger className="rounded-xl h-11 bg-white/50 focus:bg-white transition-colors">
                                 <SelectValue placeholder="Chọn thời gian" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                                <SelectItem value="1">1 ngày</SelectItem>
-                                <SelectItem value="7">7 ngày</SelectItem>
-                                <SelectItem value="30">30 ngày</SelectItem>
+                                <SelectItem value="1">1 day</SelectItem>
+                                <SelectItem value="7">7 days</SelectItem>
+                                <SelectItem value="30">30 days</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
-                            <Download className="w-4 h-4" /> Giới hạn lượt tải
+                            <Download className="w-4 h-4" /> Download Limit
                         </label>
                         <Select value={limit} onValueChange={(value) => value !== null && setLimit(value)} disabled={isSubmitting}>
                             <SelectTrigger className="rounded-xl h-11 bg-white/50 focus:bg-white transition-colors">
@@ -210,7 +210,7 @@ export function EditFile({ fileId }: EditFileProps) {
                             disabled={isSubmitting}
                         />
                         <Lock className="w-4 h-4" />
-                        Đổi mật khẩu chia sẻ
+                        Change Share Password
                     </label>
 
                     {changePassword && (
@@ -226,7 +226,7 @@ export function EditFile({ fileId }: EditFileProps) {
                     )}
                     {!changePassword && (
                         <p className="text-xs text-slate-400">
-                            Bỏ chọn = giữ nguyên mật khẩu hiện tại (nếu có).
+                            Uncheck = keep current password (if any).
                         </p>
                     )}
                 </div>
@@ -238,10 +238,10 @@ export function EditFile({ fileId }: EditFileProps) {
                 >
                     {isSubmitting ? (
                         <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Đang cập nhật...
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Updating...
                         </>
                     ) : (
-                        "Cập nhật cài đặt"
+                        "Update Settings"
                     )}
                 </Button>
             </CardContent>

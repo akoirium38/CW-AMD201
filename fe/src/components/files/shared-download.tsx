@@ -8,7 +8,7 @@ interface SharedDownloadProps {
     fileId: string | undefined;
 }
 
-/** Khung 4 góc kiểu "scan target" — dùng làm khung cho icon file, lặp lại như một chi tiết nhận diện */
+
 function CornerFrame({
     children,
     className = "",
@@ -27,7 +27,7 @@ function CornerFrame({
     );
 }
 
-/** Đường viền đứt kiểu vé xé, có hai vòng khuyết ở hai đầu */
+
 function TicketDivider() {
     return (
         <div className="relative flex items-center">
@@ -63,7 +63,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                     <Loader2 className="h-6 w-6 animate-spin text-black" />
                 </CornerFrame>
                 <p className="text-sm uppercase tracking-widest text-neutral-500">
-                    Đang kiểm tra tệp
+                    Checking file...
                 </p>
             </div>
         );
@@ -77,10 +77,10 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                 </CornerFrame>
                 <div className="space-y-1">
                     <p className="text-sm uppercase tracking-widest text-neutral-500">
-                        Không tìm thấy
+                        File not found
                     </p>
                     <h1 className="text-lg font-semibold text-black">
-                        Đường dẫn không tồn tại hoặc đã hết hạn
+                        The link does not exist or has expired  
                     </h1>
                 </div>
             </div>
@@ -94,7 +94,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
 
                     {/* Eyebrow */}
                     <div className="flex items-center justify-between px-6 pt-6 text-xs uppercase tracking-widest text-neutral-500">
-                        <span>Tệp được chia sẻ</span>
+                        <span>Shared File</span>
                         <span>{fileInfo.hasPassword ? "Có mật khẩu" : "Công khai"}</span>
                     </div>
 
@@ -123,7 +123,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                         <TicketDivider />
                     </div>
 
-                    {/* Thông tin file — dạng biên nhận */}
+
                     <div className="space-y-6 px-6 pb-6 pt-6">
                         <h1 className="break-all text-center text-lg font-semibold leading-snug text-black">
                             {fileInfo.fileName}
@@ -132,13 +132,13 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                         <dl className="grid grid-cols-2 divide-x divide-black/10 rounded-xl border border-black/10 font-mono text-sm">
                             <div className="flex flex-col items-center gap-0.5 py-3">
                                 <dt className="text-[10px] uppercase tracking-widest text-neutral-400">
-                                    Dung lượng
+                                    Size
                                 </dt>
                                 <dd className="font-semibold text-black">{fileSizeMB} MB</dd>
                             </div>
                             <div className="flex flex-col items-center gap-0.5 py-3">
                                 <dt className="text-[10px] uppercase tracking-widest text-neutral-400">
-                                    Lượt tải
+                                    Download Count
                                 </dt>
                                 <dd className="font-semibold text-black">{fileInfo.downloadCount}</dd>
                             </div>
@@ -147,7 +147,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                         {fileInfo.hasPassword ? (
                             <div className="space-y-2 rounded-xl border border-black/10 bg-neutral-100/70 p-3">
                                 <label className="text-[10px] uppercase tracking-widest text-neutral-500">
-                                    Mật khẩu
+                                    Password
                                 </label>
                                 <input
                                     type="password"
@@ -165,7 +165,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                                     <p className="text-sm text-red-600">{passwordError}</p>
                                 ) : null}
                                 {isPasswordVerified ? (
-                                    <p className="text-sm text-green-600">Mật khẩu đúng, bạn có thể tải xuống.</p>
+                                    <p className="text-sm text-green-600">Password is correct, you can download the file.</p>
                                 ) : null}
                             </div>
                         ) : null}
@@ -178,17 +178,17 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                             {isCheckingPassword ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                    Đang kiểm tra...
+                                    Checking...
                                 </>
                             ) : isDownloading ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                    Đang xử lý...
+                                    Processing...
                                 </>
                             ) : (
                                 <>
                                     <ArrowDownToLine className="h-4 w-4" />
-                                    {fileInfo.hasPassword && !isPasswordVerified ? "Xác minh mật khẩu" : "Tải xuống máy"}
+                                    {fileInfo.hasPassword && !isPasswordVerified ? "Verify Password" : "Download File"}
                                 </>
                             )}
                         </Button>

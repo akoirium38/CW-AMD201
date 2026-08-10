@@ -17,17 +17,15 @@ import {
 
     const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
     export function FileUpload() {
-    // Trạng thái từ file upload cũ
     const { uploadFile, uploading, uploadProgress } = useFileStore();
 
-    // Trạng thái cục bộ cho file và options
+
     const [file, setFile] = useState<File | null>(null);
     const [password, setPassword] = useState<string|null>();
-// Thêm rõ kiểu <string | null> cho useState
     const [expiry, setExpiry] = useState<string | null>("7");
     const [limit, setLimit] = useState<string | null>("0");
 
-    // Chỉ lưu file vào state khi thả vào, không upload ngay
+
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles[0]) {
         setFile(acceptedFiles[0]);
@@ -54,7 +52,6 @@ import {
 
     const navigate = useNavigate();
 
-    // Hàm xử lý khi bấm nút Tải Lên
     const handleUpload = async () => {
         if (!file) return;
 
@@ -63,7 +60,7 @@ import {
         return;
         }
         
-        // Convert expiry (days) to an ISO expiryDate string; 0 means no expiry
+
         let expiryDate: string | undefined = undefined;
         if (expiry && expiry !== "0") {
             expiryDate = new Date(Date.now() + Number(expiry) * 24 * 60 * 60 * 1000).toISOString();
@@ -112,7 +109,7 @@ import {
                 </div>
                 <div className="w-full space-y-1 text-center">
                     <div className="flex justify-between text-sm font-medium text-slate-600">
-                    <span>Đang tải lên...</span>
+                    <span>Uploading...</span>
                     <span>{uploadProgress}%</span>
                     </div>
                     <Progress value={uploadProgress} className="h-2 rounded-full" />
@@ -134,12 +131,12 @@ import {
                 </div>
                 <button
                     onClick={(e) => {
-                    e.stopPropagation(); // Ngăn dropzone mở lại hộp thoại chọn file
+                    e.stopPropagation(); 
                     setFile(null);
                     }}
                     className="px-4 py-1.5 text-sm font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors"
                 >
-                    Hủy chọn
+                    Cancel Selection
                 </button>
                 </div>
             ) : (
@@ -150,35 +147,35 @@ import {
                 </div>
                 <div className="space-y-1">
                     <p className="text-base font-semibold text-slate-700">
-                    Kéo thả file vào đây
+                    Drag and drop files here
                     </p>
                     <p className="text-sm text-slate-400">
-                    hoặc bấm để chọn file từ máy tính
+                    or click to select files from your computer
                     </p>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-100/50 px-3 py-1.5 rounded-full">
                     <FileIcon className="w-3.5 h-3.5" />
-                    <span>Tối đa 10 MB</span>
+                    <span>Maximum 10 MB</span>
                 </div>
                 </div>
             )}
             </div>
 
-            {/* 2. KHU VỰC TÙY CHỌN NÂNG CAO */}
+
             <div className={`mt-8 transition-opacity duration-300 ${uploading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
             <h3 className="text-sm font-semibold text-slate-800 mb-4 uppercase tracking-wider">
-                Tùy chọn chia sẻ
+                Optional Sharing Settings
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* Input: Mật khẩu */}
+
                 <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
-                    <Lock className="w-4 h-4" /> Mật khẩu
+                    <Lock className="w-4 h-4" /> Password
                 </label>
                 <Input 
                     type="password" 
-                    placeholder="Bỏ trống nếu không cần..." 
+                    placeholder="Leave blank if not needed..." 
                     className="rounded-xl h-8 bg-white/50 focus:bg-white transition-colors"
                     value={password??""}
                     onChange={(e) => setPassword(e.target.value)}
@@ -186,37 +183,37 @@ import {
                 />
                 </div>
 
-                {/* Select: Thời gian hết hạn */}
+
                 <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
-                    <Clock className="w-4 h-4" /> Hết hạn sau
+                    <Clock className="w-4 h-4" /> Expiry after
                 </label>
                 <Select value={expiry} onValueChange={setExpiry} disabled={uploading}>
                     <SelectTrigger className="rounded-xl h-11 bg-white/50 focus:bg-white transition-colors">
-                    <SelectValue placeholder="Chọn thời gian" />
+                    <SelectValue placeholder="Select duration" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                    <SelectItem value="1">1 ngày</SelectItem>
-                    <SelectItem value="7">7 ngày</SelectItem>
-                    <SelectItem value="30">30 ngày</SelectItem>
+                    <SelectItem value="1">1 day</SelectItem>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="30">30 days</SelectItem>
                     </SelectContent>
                 </Select>
                 </div>
 
-                {/* Select: Giới hạn lượt tải */}
+
                 <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
-                    <Download className="w-4 h-4" /> Lượt tải
+                    <Download className="w-4 h-4" /> Download limit
                 </label>
                 <Select value={limit} onValueChange={setLimit} disabled={uploading}>
                     <SelectTrigger className="rounded-xl h-11 bg-white/50 focus:bg-white transition-colors">
-                    <SelectValue placeholder="Giới hạn tải" />
+                    <SelectValue placeholder="Download limit" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                    <SelectItem value="0">Không giới hạn</SelectItem>
-                    <SelectItem value="10">10 lượt</SelectItem>
-                    <SelectItem value="50">50 lượt</SelectItem>
-                    <SelectItem value="100">100 lượt</SelectItem>
+                    <SelectItem value="0">No limit</SelectItem>
+                    <SelectItem value="10">10 downloads</SelectItem>
+                    <SelectItem value="50">50 downloads</SelectItem>
+                    <SelectItem value="100">100 downloads</SelectItem>
                     </SelectContent>
                 </Select>
                 </div>
@@ -231,10 +228,10 @@ import {
             {uploading ? (
                 <>
                 <UploadCloud className="w-5 h-5 animate-bounce" />
-                Đang xử lý...
+                Loading...
                 </>
             ) : (
-                "Tải lên ngay"
+                "Upload"
             )}
             </button>
 

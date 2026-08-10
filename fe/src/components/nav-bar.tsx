@@ -47,11 +47,11 @@ import {
                         className={`${navigationMenuTriggerStyle()} bg-transparent rounded-2xl cursor-pointer data-[active]:bg-slate-100`}
                         >
                         <UploadCloud className="w-4 h-4 mr-2" />
-                        Tải lên
+                        Upload
                         </NavigationMenuLink>
                     </NavigationMenuItem>
 
-                    {/* Menu 2: File của tôi */}
+                
                     <NavigationMenuItem>
                         <NavigationMenuLink 
                         active={location.pathname === "/my-files"}
@@ -59,7 +59,7 @@ import {
                         className={`${navigationMenuTriggerStyle()} bg-transparent rounded-2xl cursor-pointer data-[active]:bg-slate-100`}
                         >
                         <FolderHeart className="w-4 h-4 mr-2" />
-                        File của tôi
+                        My Files
                         </NavigationMenuLink>
                     </NavigationMenuItem>
 
@@ -70,7 +70,7 @@ import {
                         }}
                         className={`${navigationMenuTriggerStyle()} bg-transparent rounded-2xl cursor-pointer data-[active]:bg-slate-100`}
                         >
-                        Đăng xuất
+                        Logout
                         </NavigationMenuLink>
                     </NavigationMenuItem>
 
@@ -88,7 +88,7 @@ import {
                 onClick={() => navigate("/auth")} 
                 className="px-5 py-2 text-sm font-medium text-white bg-slate-800 rounded-full hover:bg-slate-700 transition-colors shadow-sm cursor-pointer"
                 >
-                Đăng nhập
+                Login
                 </button>
             )}
             </div>
