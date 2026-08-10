@@ -10,8 +10,8 @@ export default function MyFilesPage() {
                 <div className="w-full max-w-5xl">
                     <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h1 className="text-2xl font-semibold text-slate-800">Tệp của tôi</h1>
-                            <p className="text-sm text-slate-500">Danh sách file đã upload và giới hạn tải xuống hiện tại.</p>
+                            <h1 className="text-2xl font-semibold text-slate-800">My Files</h1>
+                            <p className="text-sm text-slate-500">List of files you have uploaded and their current download limits.</p>
                         </div>
                     </div>
 
