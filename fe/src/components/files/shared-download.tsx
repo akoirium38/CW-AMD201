@@ -95,7 +95,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                     {/* Eyebrow */}
                     <div className="flex items-center justify-between px-6 pt-6 text-xs uppercase tracking-widest text-neutral-500">
                         <span>Shared File</span>
-                        <span>{fileInfo.hasPassword ? "Có mật khẩu" : "Công khai"}</span>
+                        <span>{fileInfo.hasPassword ? "Has Password" : "Public"}</span>
                     </div>
 
                     {/* Khu vực Preview */}
@@ -158,7 +158,7 @@ export function SharedDownload({ fileId }: SharedDownloadProps) {
                                             setPasswordError("");
                                         }
                                     }}
-                                    placeholder="Nhập mật khẩu"
+                                    placeholder="Enter password"
                                     className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-black outline-none"
                                 />
                                 {passwordError ? (
