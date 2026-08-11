@@ -45,7 +45,7 @@ import {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         onDropRejected,
-        maxFiles: 1,
+        maxFiles: 10,
         maxSize: MAX_FILE_SIZE_BYTES,
         disabled: uploading,
     });
