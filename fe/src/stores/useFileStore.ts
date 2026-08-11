@@ -96,7 +96,7 @@ export const useFileStore = create<FileState>((set, get) => ({
             set({ loading: true });
             await (fileService as any).updateFile(fileId, payload);
 
-            // Cập nhật ngay trong danh sách hiện có, khỏi phải gọi lại fetchMyFiles
+            // Update immediately in the current list, no need to call fetchMyFiles again
             set((state) => ({
                 files: Array.isArray(state.files)
                     ? state.files.map((f): FileRecord =>
@@ -113,11 +113,11 @@ export const useFileStore = create<FileState>((set, get) => ({
                     : []
             }));
 
-            toast.success("Cập nhật cài đặt thành công!");
+            toast.success("Update settings successfully!");
             return true;
         } catch (error) {
             console.error("Failed to update file:", error);
-            toast.error("Cập nhật thất bại. Vui lòng thử lại.");
+            toast.error("Update failed. Please try again.");
             return false;
         } finally {
             set({ loading: false });
@@ -131,11 +131,11 @@ export const useFileStore = create<FileState>((set, get) => ({
         
         navigator.clipboard.writeText(link)
             .then(() => {
-                toast.success("Đã sao chép link chia sẻ! 🔗");
+                toast.success("Share link copied! 🔗");
             })
             .catch((err) => {
                 console.error("Failed to copy link:", err);
-                toast.error("Không thể sao chép link, vui lòng thử lại.");
+                toast.error("Failed to copy link, please try again.");
             });
     }
 }));

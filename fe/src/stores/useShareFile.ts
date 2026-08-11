@@ -80,8 +80,8 @@ export function useSharedFile(fileId: string | undefined) {
                     }
                 }
             } catch (error) {
-                console.error("Lỗi khi tải chi tiết file:", error);
-                toast.error("Đường dẫn không tồn tại hoặc bạn không có quyền truy cập.");
+                console.error("Error fetching file info:", error);
+                toast.error("This file may have expired or been blocked.");
             } finally {
                 setIsLoadingPreview(false);
                 setIsLoadingInfo(false);
@@ -102,7 +102,7 @@ export function useSharedFile(fileId: string | undefined) {
 
         if (fileInfo.hasPassword) {
             if (!password.trim()) {
-                setPasswordError("Vui lòng nhập mật khẩu.");
+                setPasswordError("Please enter the password.");
                 return;
             }
 
@@ -111,14 +111,14 @@ export function useSharedFile(fileId: string | undefined) {
                 try {
                     const result = await fileService.verifyPassword(fileId, password);
                     if (!result?.isSuccess) {
-                        setPasswordError(result?.message || "Mật khẩu không đúng.");
+                        setPasswordError(result?.message || "Incorrect password.");
                         return;
                     }
                     setIsPasswordVerified(true);
-                    toast.success("Mật khẩu đúng.");
+                    toast.success("Password is correct.");
                 } catch (error) {
-                    console.error("Lỗi khi xác minh mật khẩu:", error);
-                    setPasswordError("Không thể kiểm tra mật khẩu. Vui lòng thử lại.");
+                    console.error("Error verifying password:", error);
+                    setPasswordError("Unable to verify password. Please try again.");
                     return;
                 } finally {
                     setIsCheckingPassword(false);
@@ -139,8 +139,8 @@ export function useSharedFile(fileId: string | undefined) {
                 await downloadFile(fileId, fileInfo.fileName, fileInfo.hasPassword ? password : undefined);
             }
         } catch (error) {
-            console.error("Lỗi khi tải file:", error);
-            toast.error("Tải xuống thất bại. Tệp có thể đã hết hạn hoặc bị chặn.");
+            console.error("Error downloading file:", error);
+            toast.error("Download failed. The file may have expired or been blocked.");
         } finally {
             setIsDownloading(false);
         }
