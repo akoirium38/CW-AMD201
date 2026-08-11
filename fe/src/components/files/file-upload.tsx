@@ -34,9 +34,9 @@ import {
         const error = fileRejections[0]?.errors[0];
 
         if (error?.code === "file-too-large") {
-        toast.error("File vượt quá 10MB");
+        toast.error("File over 10MB is not allowed");
         } else {
-        toast.error("File không hợp lệ");
+        toast.error("File is not valid");
         }
     }, []);
 
@@ -54,7 +54,7 @@ import {
         if (files.length === 0) return;
 
         if (files.some((selectedFile) => selectedFile.size > MAX_FILE_SIZE_BYTES)) {
-        toast.error("Một hoặc nhiều file vượt quá 10MB");
+        toast.error("One or more files exceed the 10MB limit");
         return;
         }
         
@@ -82,7 +82,7 @@ import {
         setFiles([]);
         setPassword("");
         } else if (uploadedCount > 0) {
-            toast.warning(`${uploadedCount}/${files.length} file đã được upload`);
+            toast.warning(`${uploadedCount}/${files.length} file has been uploaded`);
         }
     };
 
