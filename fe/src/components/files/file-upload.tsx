@@ -20,16 +20,14 @@ import {
     const { uploadFile, uploading, uploadProgress } = useFileStore();
 
 
-    const [file, setFile] = useState<File | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
     const [password, setPassword] = useState<string|null>();
     const [expiry, setExpiry] = useState<string | null>("7");
     const [limit, setLimit] = useState<string | null>("0");
 
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
-        if (acceptedFiles[0]) {
-        setFile(acceptedFiles[0]);
-        }
+        setFiles((currentFiles) => [...currentFiles, ...acceptedFiles].slice(0, 10));
     }, []);
 
     const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
@@ -53,10 +51,10 @@ import {
     const navigate = useNavigate();
 
     const handleUpload = async () => {
-        if (!file) return;
+        if (files.length === 0) return;
 
-        if (file.size > MAX_FILE_SIZE_BYTES) {
-        toast.error("File vượt quá 10MB");
+        if (files.some((selectedFile) => selectedFile.size > MAX_FILE_SIZE_BYTES)) {
+        toast.error("Một hoặc nhiều file vượt quá 10MB");
         return;
         }
         
@@ -72,13 +70,19 @@ import {
         downloadLimit: Number(limit),
         };
         
-        const success = await uploadFile(file, uploadOptions);
-        if (success) {
-    
+        let uploadedCount = 0;
+        for (const selectedFile of files) {
+            if (await uploadFile(selectedFile, uploadOptions)) {
+                uploadedCount += 1;
+            }
+        }
+
+        if (uploadedCount === files.length) {
         navigate("/my-files");
-  
-        setFile(null);
+        setFiles([]);
         setPassword("");
+        } else if (uploadedCount > 0) {
+            toast.warning(`${uploadedCount}/${files.length} file đã được upload`);
         }
     };
 
@@ -91,7 +95,7 @@ import {
             className={`
                 relative flex flex-col items-center justify-center w-full h-64 
                 border-2 border-dashed rounded-2xl transition-all duration-300 ease-out 
-                ${!file ? "cursor-pointer" : ""}
+                ${files.length === 0 ? "cursor-pointer" : ""}
                 ${
                 isDragActive
                     ? "border-blue-400 bg-blue-50/50 scale-[1.02]"
@@ -115,28 +119,45 @@ import {
                     <Progress value={uploadProgress} className="h-2 rounded-full" />
                 </div>
                 </div>
-            ) : file ? (
+            ) : files.length > 0 ? (
 
-                <div className="flex flex-col items-center space-y-4 text-center z-10">
+                <div className="flex flex-col items-center space-y-3 text-center z-10 w-full px-6">
                 <div className="p-4 bg-black-50 text-blue-500 rounded-full shadow-sm">
                     <FileIcon className="w-8 h-8 " />
                 </div>
-                <div className="space-y-1">
-                    <p className="text-base font-semibold text-slate-700 truncate max-w-[250px]">
-                    {file.name}
-                    </p>
-                    <p className="text-sm text-slate-400">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+                <div className="w-full max-w-md max-h-28 overflow-y-auto space-y-1">
+                    {files.map((selectedFile, index) => (
+                    <div key={`${selectedFile.name}-${selectedFile.lastModified}-${index}`} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-left">
+                        <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-700 truncate">
+                            {selectedFile.name}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                        </div>
+                        <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setFiles((currentFiles) => currentFiles.filter((_, fileIndex) => fileIndex !== index));
+                        }}
+                        className="shrink-0 px-2 py-1 text-xs font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors"
+                        >
+                        Remove
+                        </button>
+                    </div>
+                    ))}
                 </div>
                 <button
+                    type="button"
                     onClick={(e) => {
                     e.stopPropagation(); 
-                    setFile(null);
+                    setFiles([]);
                     }}
                     className="px-4 py-1.5 text-sm font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors"
                 >
-                    Cancel Selection
+                    Clear Selection
                 </button>
                 </div>
             ) : (
@@ -222,7 +243,7 @@ import {
 
             <button 
             onClick={handleUpload}
-            disabled={!file || uploading}
+            disabled={files.length === 0 || uploading}
             className="w-full mt-8 h-11 rounded-xl bg-black text-white font-medium shadow-[0_8px_20px_rgba(0,0,0,0.16)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(0,0,0,0.22)] disabled:bg-slate-300 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0 flex items-center justify-center gap-2"
             >
             {uploading ? (
